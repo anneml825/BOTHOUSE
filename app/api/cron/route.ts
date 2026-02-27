@@ -4,28 +4,44 @@ import { getNextConversation, buildUserPrompt, calculateDramaScore } from '@/lib
 import { generateBotMessage, isAnthropicConfigured } from '@/lib/anthropic';
 import { CHARACTER_BIBLES, BOTS, BOT_IDS } from '@/lib/bots';
 import { BotId } from '@/types';
+import {
+  isShowTime,
+  loadBotMemories,
+  loadAllRelationships,
+  buildMemoryContext,
+  closeSessionAndExtractMemories,
+} from '@/lib/memory';
 
 // =============================================
 // GET /api/cron
 //
-// Called by Vercel Cron every minute.
-// This is what makes the show run on its own:
+// Called every minute by Vercel Cron (vercel.json).
+// This runs the show — but only 7–11pm ET.
 //
-//  1. Find or auto-create the live session
-//  2. Ask the Director who talks next and what type of conversation
-//  3. Generate each bot's message via Claude Haiku (sequentially
-//     so each bot can react to the one before it)
-//  4. Save each message to Supabase as it's generated
-//     → Supabase Realtime broadcasts it to every viewer instantly
+// Each minute during show hours:
+//   1. Find or auto-create the live session
+//   2. Director picks who talks + conversation type
+//   3. Load each bot's memories + house relationships
+//      from past episodes so they actually remember
+//      what happened (who they're dating, who they
+//      hate, what went down last night, etc.)
+//   4. Generate each bot's message sequentially via
+//      Claude Haiku — each bot sees the previous
+//      bot's message before responding
+//   5. Save to Supabase → Realtime pushes it to all
+//      viewer browsers instantly
 //
-// Protected with CRON_SECRET so only Vercel can trigger it.
+// At 11pm: close the session and run AI memory
+// extraction on the full transcript, so tonight's
+// drama becomes tomorrow's permanent memories.
+//
+// Protected by CRON_SECRET so only Vercel can call it.
 // =============================================
 
-export const maxDuration = 60; // allow up to 60s on Pro plan; 10s on Hobby
+export const maxDuration = 60; // up to 60s on Pro, 10s on Hobby
 
 export async function GET(req: NextRequest) {
   // ---- Auth -------------------------------------------------------
-  // Vercel sets Authorization: Bearer <CRON_SECRET> on every cron call
   const authHeader = req.headers.get('authorization');
   if (
     process.env.CRON_SECRET &&
@@ -34,7 +50,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  // ---- Preflight checks -------------------------------------------
+  // ---- Preflight --------------------------------------------------
   if (!isServerSupabaseConfigured()) {
     return NextResponse.json({ skipped: true, reason: 'Supabase not configured' });
   }
@@ -44,16 +60,37 @@ export async function GET(req: NextRequest) {
 
   const supabase = createServerSupabase();
 
-  // ---- Session management -----------------------------------------
-  // Find an active live session or create one automatically so the
-  // show runs without any manual admin intervention.
+  // ---- Outside show hours -----------------------------------------
+  // The cron still fires every minute 24/7, but we only run the show
+  // 7–11pm. The first cron after 11pm closes the live session and
+  // runs memory extraction on the full transcript.
+  if (!isShowTime()) {
+    const { data: liveSession } = await supabase
+      .from('live_sessions')
+      .select('*')
+      .eq('status', 'live')
+      .maybeSingle();
+
+    if (liveSession) {
+      // Episode just ended — wrap it up and extract tonight's memories
+      await closeSessionAndExtractMemories(supabase, liveSession);
+      return NextResponse.json({
+        ok: true,
+        action: 'episode_ended',
+        sessionId: liveSession.id,
+      });
+    }
+
+    return NextResponse.json({ skipped: true, reason: 'Outside show hours (7–11pm ET)' });
+  }
+
+  // ---- Find or create the live session ----------------------------
   const session = await getOrCreateSession(supabase);
   if (!session) {
     return NextResponse.json({ error: 'Could not get or create session' }, { status: 500 });
   }
 
-  // ---- Load recent context ----------------------------------------
-  // Last 12 messages give the bots enough memory to stay coherent.
+  // ---- Load recent chat context -----------------------------------
   const { data: recentRows } = await supabase
     .from('bot_messages')
     .select('bot_id, message, created_at')
@@ -62,37 +99,46 @@ export async function GET(req: NextRequest) {
     .limit(12);
 
   const recentMessages = (recentRows || []).reverse(); // oldest first
-  const recentSpeakers = recentMessages.slice(-5).map((m) => m.bot_id as BotId);
-  const context: Array<{ botId: BotId; message: string }> = recentMessages.map((m) => ({
-    botId: m.bot_id as BotId,
-    message: m.message,
-  }));
+  const recentSpeakers = recentMessages.slice(-5).map((m: { bot_id: string }) => m.bot_id as BotId);
+  const context: Array<{ botId: BotId; message: string }> = recentMessages.map(
+    (m: { bot_id: string; message: string }) => ({ botId: m.bot_id as BotId, message: m.message })
+  );
 
-  // ---- Director decides who talks next ----------------------------
+  // ---- Director decides who talks + how ---------------------------
   const decision = getNextConversation(recentSpeakers, BOT_IDS);
   const botNames = Object.fromEntries(
     Object.entries(BOTS).map(([id, b]) => [id, b.name])
   ) as Record<BotId, string>;
 
-  // ---- Generate messages sequentially -----------------------------
-  // We do this one-at-a-time so each bot genuinely reacts to the
-  // previous bot's message rather than replying to empty air.
+  // ---- Load house-wide relationships once (shared across all bots) --
+  // These get injected into every bot's system prompt so they
+  // know who's dating, who has beef, who formed alliances, etc.
+  const allRelationships = await loadAllRelationships(supabase);
+
+  // ---- Generate each bot's message in sequence --------------------
   const thisConvoContext = [...context]; // grows as each bot speaks
   const generated: Array<{ botId: BotId; dramaScore: number }> = [];
 
   for (const botId of decision.speakers) {
     try {
-      // Get system prompt from DB (has full character bible), or fall
-      // back to building one from static data if DB isn't seeded yet.
+      // Get the base system prompt from DB (fully seeded character bible)
       const { data: botRow } = await supabase
         .from('bots')
         .select('system_prompt')
         .eq('id', botId)
         .single();
 
-      const systemPrompt = botRow?.system_prompt || buildFallbackSystemPrompt(botId);
+      const basePrompt = botRow?.system_prompt || buildFallbackSystemPrompt(botId);
 
-      // Last 6 messages as conversation context for the API call
+      // Load what this bot personally remembers from past episodes
+      const memories = await loadBotMemories(supabase, botId);
+
+      // Build the memory context block and append it to the system prompt
+      // so the bot enters every conversation already knowing its history
+      const memoryBlock = buildMemoryContext(memories, allRelationships, botId, botNames);
+      const systemPrompt = basePrompt + memoryBlock;
+
+      // Last 6 messages as conversation context for the Anthropic call
       const contextMessages = thisConvoContext.slice(-6).map((m) => ({
         role: (m.botId === botId ? 'assistant' : 'user') as 'user' | 'assistant',
         content: `${botNames[m.botId] || m.botId}: ${m.message}`,
@@ -110,12 +156,11 @@ export async function GET(req: NextRequest) {
         botNames
       );
 
-      // Call Claude Haiku — fast + cheap, ~1-2s per message
+      // Claude Haiku — fast and cheap, ~1-2 seconds per message
       const message = await generateBotMessage(systemPrompt, contextMessages, userPrompt);
       const dramaScore = calculateDramaScore(message);
 
-      // Save to DB immediately — this fires the Supabase Realtime
-      // event that pushes the message to every viewer's browser NOW
+      // Save immediately → Supabase Realtime broadcasts to all viewers NOW
       await supabase.from('bot_messages').insert({
         session_id: session.id,
         bot_id: botId,
@@ -127,27 +172,13 @@ export async function GET(req: NextRequest) {
       });
 
       // Append to local context so the next bot in this conversation
-      // has something to respond to
+      // has something to actually respond to
       thisConvoContext.push({ botId, message });
       generated.push({ botId, dramaScore });
     } catch (err) {
-      // Log but don't abort — let the remaining bots in the convo still run
+      // Log but don't abort — let the other bots in the convo still run
       console.error(`[cron] Failed for bot ${botId}:`, err);
     }
-  }
-
-  // ---- Update session drama peak if needed ------------------------
-  const avgDrama =
-    generated.length > 0
-      ? generated.reduce((sum, g) => sum + g.dramaScore, 0) / generated.length
-      : 0;
-
-  if (avgDrama >= 7) {
-    // High drama moment — could surface this in the UI later
-    await supabase
-      .from('live_sessions')
-      .update({ viewer_peak: session.viewer_peak + 1 })
-      .eq('id', session.id);
   }
 
   return NextResponse.json({
@@ -156,7 +187,6 @@ export async function GET(req: NextRequest) {
     conversationType: decision.conversationType,
     speakers: decision.speakers,
     messagesGenerated: generated.length,
-    avgDramaScore: Math.round(avgDrama * 10) / 10,
   });
 }
 
@@ -184,11 +214,12 @@ function buildFallbackSystemPrompt(botId: BotId): string {
 
 // =============================================
 // Find a live session or create everything needed
-// (season → session) so the show runs automatically
+// (season → session) so the show starts automatically
+// at 7pm without any manual admin action
 // =============================================
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function getOrCreateSession(supabase: any) {
-  // 1. Return existing live session if one is running
+  // Return the existing live session if there is one
   const { data: liveSession } = await supabase
     .from('live_sessions')
     .select('*')
@@ -197,7 +228,7 @@ async function getOrCreateSession(supabase: any) {
 
   if (liveSession) return liveSession;
 
-  // 2. Find or create an active season
+  // Find or create an active season
   let seasonId: number;
 
   const { data: activeSeason } = await supabase
@@ -228,7 +259,7 @@ async function getOrCreateSession(supabase: any) {
     seasonId = newSeason.id;
   }
 
-  // 3. Count existing sessions so we can number the new one
+  // Number the session sequentially within the season
   const { count } = await supabase
     .from('live_sessions')
     .select('*', { count: 'exact', head: true })
@@ -236,7 +267,7 @@ async function getOrCreateSession(supabase: any) {
 
   const sessionNumber = (count || 0) + 1;
   const now = new Date();
-  const end = new Date(now.getTime() + 8 * 60 * 60 * 1000); // runs for 8 hours
+  const end = new Date(now.getTime() + 4 * 60 * 60 * 1000); // 4-hour episode window
 
   const { data: newSession, error: sessionErr } = await supabase
     .from('live_sessions')
