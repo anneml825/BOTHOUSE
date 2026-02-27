@@ -7,6 +7,8 @@ import { Send, MessageSquare, Pencil, Check } from 'lucide-react';
 // Viewer Chat Component
 // No account needed — just land and start chatting.
 // Username is auto-generated and stored in localStorage.
+// Real-time: all viewers see each other's messages instantly
+// via Supabase Realtime WebSocket subscription.
 // =============================================
 
 interface ChatMessage {
@@ -66,7 +68,7 @@ const FILLER_MESSAGES = [
 ];
 
 export default function ViewerChat({ sessionId, demoMode = true }: ViewerChatProps) {
-  const [messages, setMessages] = useState<ChatMessage[]>(DEMO_CHAT);
+  const [messages, setMessages] = useState<ChatMessage[]>(demoMode ? DEMO_CHAT : []);
   const [inputValue, setInputValue] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [username, setUsername] = useState('');
@@ -75,25 +77,31 @@ export default function ViewerChat({ sessionId, demoMode = true }: ViewerChatPro
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
+  // Ref so Supabase subscription closure always sees the current username
+  const usernameRef = useRef('');
 
   // Load or generate username from localStorage on mount
   useEffect(() => {
     const stored = localStorage.getItem('bothouse_username');
-    if (stored) {
-      setUsername(stored);
-    } else {
-      const generated = generateUsername();
-      setUsername(generated);
-      localStorage.setItem('bothouse_username', generated);
-    }
+    const name = stored || generateUsername();
+    if (!stored) localStorage.setItem('bothouse_username', name);
+    setUsername(name);
+    usernameRef.current = name;
   }, []);
+
+  // Keep ref in sync whenever username changes
+  useEffect(() => {
+    usernameRef.current = username;
+  }, [username]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Demo mode: drip in fake viewer messages so the room feels populated
+  // =============================================
+  // DEMO MODE: drip in fake viewer messages
+  // =============================================
   useEffect(() => {
     if (!demoMode) return;
 
@@ -115,6 +123,83 @@ export default function ViewerChat({ sessionId, demoMode = true }: ViewerChatPro
     return () => clearInterval(interval);
   }, [demoMode]);
 
+  // =============================================
+  // REAL MODE: fetch history + subscribe to live updates
+  // Every viewer gets a WebSocket connection via Supabase Realtime.
+  // When anyone sends a message it is broadcast to all subscribers
+  // instantly — no polling, no refreshing.
+  // =============================================
+  useEffect(() => {
+    if (demoMode) return;
+
+    let cleanup: (() => void) | undefined;
+
+    import('@/lib/supabase').then(({ supabase, isSupabaseConfigured }) => {
+      if (!isSupabaseConfigured()) return;
+
+      // Fetch the last 100 messages on mount so the room doesn't look empty
+      const query = supabase
+        .from('viewer_messages')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(100);
+
+      if (sessionId) query.eq('session_id', sessionId);
+
+      query.then(({ data }) => {
+        if (data) {
+          const history = data.reverse().map(m => ({
+            ...m,
+            isOwn: m.username === usernameRef.current,
+          }));
+          setMessages(history);
+        }
+      });
+
+      // Subscribe — one shared channel for all viewers
+      const channelName = sessionId
+        ? `viewer_messages_${sessionId}`
+        : 'viewer_messages_global';
+
+      const channel = supabase
+        .channel(channelName)
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'viewer_messages',
+            ...(sessionId ? { filter: `session_id=eq.${sessionId}` } : {}),
+          },
+          (payload) => {
+            const incoming = payload.new as ChatMessage;
+            setMessages(prev => {
+              // Remove the matching optimistic message (same sender + same text)
+              // so we don't show a duplicate when our own message bounces back
+              const deduped = prev.filter(
+                m => !(
+                  m.id.startsWith('optimistic-') &&
+                  m.username === incoming.username &&
+                  m.message === incoming.message
+                )
+              );
+              // Guard against duplicate real IDs (shouldn't happen but be safe)
+              if (deduped.some(m => m.id === incoming.id)) return deduped;
+              return [
+                ...deduped.slice(-100),
+                { ...incoming, isOwn: incoming.username === usernameRef.current },
+              ];
+            });
+          }
+        )
+        .subscribe();
+
+      cleanup = () => { supabase.removeChannel(channel); };
+    });
+
+    return () => { cleanup?.(); };
+  }, [demoMode, sessionId]);
+
   // Focus name input when edit mode opens
   useEffect(() => {
     if (editingName) {
@@ -132,6 +217,7 @@ export default function ViewerChat({ sessionId, demoMode = true }: ViewerChatPro
     const trimmed = nameInput.trim().replace(/\s+/g, '_').slice(0, 30);
     if (trimmed) {
       setUsername(trimmed);
+      usernameRef.current = trimmed;
       localStorage.setItem('bothouse_username', trimmed);
     }
     setEditingName(false);
@@ -150,7 +236,9 @@ export default function ViewerChat({ sessionId, demoMode = true }: ViewerChatPro
     setInputValue('');
     setIsSubmitting(true);
 
-    // Add optimistically — feels instant
+    // Optimistic insert — appears instantly while the request is in-flight.
+    // In real mode the Supabase subscription will deliver the confirmed message
+    // back and replace this placeholder automatically.
     const optimisticId = `optimistic-${Date.now()}`;
     setMessages(prev => [
       ...prev,
@@ -170,7 +258,7 @@ export default function ViewerChat({ sessionId, demoMode = true }: ViewerChatPro
         body: JSON.stringify({ message: messageText, username, sessionId }),
       });
     } catch {
-      // On failure, remove the optimistic message and restore input
+      // On failure remove the optimistic message and restore the input
       setMessages(prev => prev.filter(m => m.id !== optimisticId));
       setInputValue(messageText);
     } finally {
@@ -201,6 +289,13 @@ export default function ViewerChat({ sessionId, demoMode = true }: ViewerChatPro
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-3 space-y-2">
+        {messages.length === 0 && (
+          <div className="flex items-center justify-center h-full">
+            <p className="text-[#5a5a78] font-mono text-xs">
+              No messages yet — say something!
+            </p>
+          </div>
+        )}
         {messages.map((msg) => (
           <div key={msg.id} className="flex gap-2 items-start group">
             <span className="text-[#5a5a78] font-mono text-xs mt-0.5 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
