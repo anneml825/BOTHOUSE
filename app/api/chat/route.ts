@@ -1,41 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
 import { createServerSupabase, isServerSupabaseConfigured } from '@/lib/supabase-server';
 
 // =============================================
-// POST /api/chat   — Send a viewer chat message
+// POST /api/chat   — Send a viewer chat message (no auth required)
 // GET  /api/chat   — Fetch recent viewer messages
 // =============================================
 
 export async function POST(req: NextRequest) {
   try {
-    const { message, sessionId } = await req.json();
+    const { message, username, sessionId } = await req.json();
 
     if (!message?.trim()) {
       return NextResponse.json({ error: 'Message is required' }, { status: 400 });
     }
 
+    const safeUsername = (username || 'viewer').toString().trim().slice(0, 30) || 'viewer';
+    const safeMessage = message.trim().slice(0, 200);
+
     if (!isServerSupabaseConfigured()) {
-      // Demo mode — just acknowledge the message
+      // Demo mode — optimistic UI handles display client-side
       return NextResponse.json({ success: true, demo: true });
     }
 
-    // Use the cookie-based Supabase client so RLS sees the authenticated user
-    const supabase = createRouteHandlerClient({ cookies });
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: 'You must be signed in to chat' }, { status: 401 });
-    }
+    // Use service role to insert — user_id is nullable (migration 003)
+    // and the "viewer_messages_public_insert" RLS policy allows this
+    const supabase = createServerSupabase();
 
     const { error } = await supabase.from('viewer_messages').insert({
-      user_id: user.id,
-      username: user.user_metadata?.username || user.email?.split('@')[0] || 'viewer',
-      message: message.trim().slice(0, 200),
+      user_id: null,
+      username: safeUsername,
+      message: safeMessage,
       session_id: sessionId || null,
     });
 

@@ -128,13 +128,13 @@ export default function HomePage() {
 
           {/* Viewer Chat Sidebar */}
           <div className="hidden lg:block rounded-xl overflow-hidden border border-[#1e1e35]">
-            <ViewerChat demoMode={IS_DEMO} isAuthenticated={false} />
+            <ViewerChat demoMode={IS_DEMO} />
           </div>
         </div>
 
         {/* Mobile chat toggle (shows below feed on mobile) */}
         <div className="lg:hidden mt-4 bg-[#0f0f1a] border border-[#1e1e35] rounded-xl overflow-hidden h-64">
-          <ViewerChat demoMode={IS_DEMO} isAuthenticated={false} />
+          <ViewerChat demoMode={IS_DEMO} />
         </div>
 
         {/* =====================
