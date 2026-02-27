@@ -23,6 +23,7 @@ const RELATIONSHIP_ICONS: Record<string, { icon: string; color: string }> = {
   allies: { icon: '🤝', color: '#00ff88' },
   enemies: { icon: '⚔️', color: '#ff4400' },
   crushing: { icon: '💖', color: '#ff0080' },
+  romantic: { icon: '💞', color: '#ff69b4' },
   friends: { icon: '💛', color: '#ffdd00' },
   rivals: { icon: '🥊', color: '#ff8800' },
   suspicious: { icon: '👀', color: '#9000ff' },

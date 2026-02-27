@@ -354,6 +354,7 @@ body {
 .rel-allies { color: var(--neon-green); }
 .rel-enemies { color: var(--neon-orange); }
 .rel-crushing { color: var(--neon-pink); }
+.rel-romantic { color: #ff69b4; }
 .rel-friends { color: var(--neon-cyan); }
 .rel-rivals { color: var(--neon-yellow); }
 .rel-suspicious { color: var(--neon-purple); }
