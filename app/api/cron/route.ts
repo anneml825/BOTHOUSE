@@ -109,7 +109,7 @@ export async function GET(req: NextRequest) {
     speakers: [],
   };
 
-  for (let round = 0; round < 20; round++) {
+  for (let round = 0; round < 1; round++) {
     if (Date.now() - startTime > TIME_BUDGET_MS) break;
 
     // Fresh context every round so bots react to what was just said
