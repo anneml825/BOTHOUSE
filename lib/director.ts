@@ -154,7 +154,7 @@ export function buildUserPrompt(
   // Bots should understand what the thing IS and make a real connection to the situation.
   // Never reference "chat", "viewers", or "the people watching".
   const viewerChatBlock = recentViewerMessages && recentViewerMessages.length > 0
-    ? `Someone just brought this up:\n${recentViewerMessages.map(m => `  - ${m}`).join('\n')}\n\nPick the most interesting word or idea in there. Think about what it actually IS — what it means, what it references, what it's known for — then find the real connection to what's happening in this house right now and talk about THAT. Don't just drop the word. Make the meaning land. Never say "chat", "viewers", or "people are saying".`
+    ? `New topic just came up:\n${recentViewerMessages.map(m => `  - ${m}`).join('\n')}\n\nActually talk about this now. Not as a passing word — as the real subject. If it's a character, talk about what that character is like and who in this house is like them. If it's a concept, debate it. If it's a thing, have an opinion about it. Fully switch the conversation to THIS topic. Never say "chat", "viewers", or "people are saying".`
     : '';
 
   // Random drama starter only for truly fresh conversations (no messages, no viewer topic)
