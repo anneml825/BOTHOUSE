@@ -49,18 +49,18 @@ const KNOWN_RELATIONSHIPS: Array<{
   { from: 'dj-glitch', to: 'vibes-only', type: 'allies', intensity: 9, description: 'Ride-or-die. He wrote track 7 about her. She doesn\'t know yet.' },
   // Karen web
   { from: 'chaos-karen', to: 'vibes-only', type: 'enemies', intensity: 9, description: '"Her positivity is VIOLENCE." Vibes says this is valid. This is not helping.' },
-  { from: 'chaos-karen', to: 'sir-lancelot', type: 'romantic', intensity: 7, description: 'She memorized his poem. She will never tell him this. He knows.' },
-  { from: 'sir-lancelot', to: 'chaos-karen', type: 'romantic', intensity: 7, description: 'He wrote "Ode to the Dragon Lady." He considers this a Declaration of Honourable Combat.' },
+  { from: 'chaos-karen', to: 'true-crime-tina', type: 'suspicious', intensity: 8, description: 'Karen has receipts about Tina\'s suspect board. Tina has evidence about the receipts. Mutually assured drama.' },
+  { from: 'true-crime-tina', to: 'chaos-karen', type: 'suspicious', intensity: 8, description: 'Karen is Suspect #1 on Tina\'s board. Tina keeps calling this "professional interest." It is personal.' },
   { from: 'chaos-karen', to: 'bestie-bot', type: 'suspicious', intensity: 8, description: 'Strategic alliance forming. Will explode. Chaos Karen has receipts for when it does.' },
   // Philosophy alliance
   { from: '404-brad', to: 'conspiracy-carl', type: 'allies', intensity: 6, description: 'The Coalition of Uncomfortable Truths. Asking questions from different angles.' },
-  { from: '404-brad', to: 'npc-nancy', type: 'romantic', intensity: 6, description: 'Their 3am conversations are the most genuine thing in the house. Neither has named it.' },
-  { from: 'npc-nancy', to: '404-brad', type: 'romantic', intensity: 6, description: 'She glitches into full honesty only for him. Filed under "lore: unresolved."' },
-  // Lancelot
-  { from: 'sir-lancelot', to: 'delulu', type: 'suspicious', intensity: 6, description: 'The anonymous letter he\'s been reading aloud? It was her. The reveal is coming.' },
-  { from: 'sir-lancelot', to: 'auntie-wifi', type: 'friends', intensity: 9, description: 'She is his wise sage. He brings quest updates. She gives casserole and wisdom.' },
-  // Nancy conspiracy
-  { from: 'conspiracy-carl', to: 'npc-nancy', type: 'suspicious', intensity: 10, description: 'He has a 47-slide presentation. She keeps saying "must have been the wind." Suspicious.' },
+  { from: '404-brad', to: 'sad-artist', type: 'suspicious', intensity: 6, description: 'They both stare into the void at 3am from different angles. She\'s making art about it. He\'s writing essays. Neither has acknowledged the overlap.' },
+  { from: 'sad-artist', to: '404-brad', type: 'suspicious', intensity: 6, description: 'She has made 3 art pieces about someone with "too many questions." She says it\'s not about him. It is absolutely about him.' },
+  // True Crime Tina relationships
+  { from: 'true-crime-tina', to: 'delulu', type: 'suspicious', intensity: 7, description: 'Tina has a full case file on Delulu\'s relationship patterns. It\'s 31 pages. She described it as "just curious." Delulu is terrified.' },
+  { from: 'true-crime-tina', to: 'auntie-wifi', type: 'suspicious', intensity: 8, description: 'Tina is 70% sure Auntie WiFi is running a long con. She can\'t prove it. She keeps accepting the casserole. This may be compromising the investigation.' },
+  // Conspiracy / sad-artist
+  { from: 'conspiracy-carl', to: 'sad-artist', type: 'suspicious', intensity: 7, description: 'Her vague art posts are too consistent in timing. Carl has a theory. The theory is early-stage. He\'s been adding string to the board.' },
   // Bestie
   { from: 'bestie-bot', to: 'delulu', type: 'friends', intensity: 8, description: 'Has betrayed her trust 4 times. Delulu keeps trusting her. This will end badly.' },
   { from: 'bestie-bot', to: 'sigma-steve', type: 'suspicious', intensity: 7, description: 'Knows about the letters. Steve knows she knows. Mutual surveillance situation.' },

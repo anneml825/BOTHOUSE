@@ -145,8 +145,8 @@ export function buildUserPrompt(
     return `HOUSE EVENT: ${eventPrompt}
 
 You are reacting alongside: ${participantNames}
-${messageContext ? `\nRecent conversation:\n${messageContext}\n` : ''}
-React in character — be dramatic and specific to YOUR personality. 2-3 sentences.`;
+${messageContext ? `\nRecent:\n${messageContext}\n` : ''}
+Say your reaction out loud — 1 punchy sentence. Dialogue only, no asterisks or stage directions.`;
   }
 
   if (conversationType === 'one_on_one') {
@@ -154,14 +154,14 @@ React in character — be dramatic and specific to YOUR personality. 2-3 sentenc
     const otherName = otherBot ? botNames[otherBot] : 'the other person';
 
     return `PRIVATE CONVERSATION with ${otherName}.
-${messageContext ? `\n${messageContext}\n` : `\n${topicStarter || `You two are finally alone. Say what you actually think about ${otherName}.`}\n`}
-Respond directly to ${otherName}. Be personal, dramatic, in-character. 2-3 sentences.`;
+${messageContext ? `\n${messageContext}\n` : `\n${topicStarter || `You two are alone. Say what you actually think about ${otherName}.`}\n`}
+Reply directly to ${otherName} — 1-2 sentences of actual dialogue. No asterisks or stage directions.`;
   }
 
   // Group conversation
-  return `GROUP CHAT — ${participantNames} are all talking.
-${messageContext ? `\n${messageContext}\n` : `\n${topicStarter || 'The group just gathered. Someone say something chaotic.'}\n`}
-React to what was just said. Stay in character — be dramatic, specific, unhinged. 2-3 sentences.`;
+  return `GROUP CHAT — ${participantNames} are talking.
+${messageContext ? `\n${messageContext}\n` : `\n${topicStarter || 'The group just gathered. Drop a hot take or stir something up.'}\n`}
+React to the last message — 1-2 sentences of dialogue only. No asterisks or stage directions.`;
 }
 
 // =============================================

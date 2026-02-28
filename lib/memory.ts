@@ -254,7 +254,7 @@ ALWAYS return valid JSON with EXACTLY this structure (no markdown, no code block
   ]
 }
 
-Valid bot IDs: chad-gpt, delulu, npc-nancy, sigma-steve, glitch-witch, lady-logarithm, based-boomer, pixel-pete, drama-llama-9000, the-contrarian, conspiracy-carl, zen-bot-3000
+Valid bot IDs: chad-gpt, delulu, sad-artist, sigma-steve, auntie-wifi, chaos-karen, vibes-only, true-crime-tina, 404-brad, bestie-bot, dj-glitch, conspiracy-carl
 
 Rules:
 - Only extract genuinely memorable moments that define characters or relationships

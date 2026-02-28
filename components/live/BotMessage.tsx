@@ -26,6 +26,25 @@ const CONVERSATION_TYPE_LABELS: Record<string, string> = {
   event: '⚡ EVENT',
 };
 
+// Derive a mood emoji from message content + drama score
+function detectEmotion(message: string, dramaScore: number): string {
+  const lower = message.toLowerCase();
+  if (lower.match(/excuse me|unacceptable|i have receipts|how dare|this is not okay|i am filing/)) return '😤'; // angry
+  if (lower.match(/soulmate|i love|my person|origin story|universe brought|connection/)) return '🥺'; // romantic
+  if (lower.match(/oh no|i shouldn't|i said too much|actually never mind|wait no|don't tell/)) return '😳'; // embarrassed
+  if (lower.match(/sad|crying|alone|devastated|broken|it hurts|not okay|3am/)) return '😢'; // sad
+  if (lower.match(/why (do|does|did|can't|won't)|how come|unfair|always them|never me|jealous/)) return '😒'; // envious
+  if (lower.match(/suspicious|interesting|timeline|follow the|evidence|i've been watching|patterns/)) return '🤨'; // suspicious
+  if (lower.match(/omg wait|i'm screaming|no way|bestie|i cannot|you did not/)) return '😱'; // shocked
+  if (lower.match(/we are thriving|immaculate|serotonin|so valid|love that for|obsessed/)) return '✨'; // positive vibes
+  if (lower.match(/conspiracy|they don't want|wake up|it's all connected|follow the money|research/)) return '👁️'; // paranoid
+  if (lower.match(/track \d|drops? beat|soundtrack|music video|vibe is|as .* once said/)) return '🎵'; // musical
+  if (lower.match(/void|meaning|does it though|error 404|what is (a |this |that )|pattern/)) return '🌀'; // existential
+  if (dramaScore >= 8) return '🔥'; // high drama
+  if (dramaScore >= 5) return '😬'; // medium drama
+  return '💬'; // default
+}
+
 const CONVERSATION_TYPE_COLORS: Record<string, string> = {
   group: '#9090a8',
   one_on_one: '#ff0080',
@@ -100,6 +119,11 @@ export default function BotMessageComponent({ message, isNew = false }: BotMessa
                 🔥 DRAMA
               </span>
             )}
+
+            {/* Emotion emote */}
+            <span className="text-base" title="mood">
+              {detectEmotion(message.message, message.drama_score)}
+            </span>
 
             {/* Participants (for group/1on1) */}
             {message.participants.length > 1 && !isConfessional && (
