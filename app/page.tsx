@@ -23,6 +23,7 @@ export default function HomePage() {
   const [chaosLevel, setChaosLevel] = useState(42);
   const [viewerCount, setViewerCount] = useState(1337);
   const [isLive, setIsLive] = useState(IS_DEMO ? true : false);
+  const [sessionId, setSessionId] = useState<string | undefined>(undefined);
 
   const nextSession = getNextSessionTime(0); // Midnight UTC
 
@@ -34,6 +35,7 @@ export default function HomePage() {
         const res = await fetch('/api/session');
         const json = await res.json();
         setIsLive(json?.data?.isLive ?? false);
+        setSessionId(json?.data?.currentSession?.id ?? undefined);
       } catch {
         // ignore network errors, keep current state
       }
@@ -137,7 +139,7 @@ export default function HomePage() {
           {/* Live Feed */}
           <div className="bg-[#0f0f1a] border border-[#1e1e35] rounded-xl overflow-hidden">
             {isLive ? (
-              <LiveFeed demoMode={IS_DEMO} isLive={isLive} />
+              <LiveFeed demoMode={IS_DEMO} isLive={isLive} sessionId={sessionId} />
             ) : (
               <OfflineState nextSession={nextSession} />
             )}
