@@ -141,7 +141,7 @@ export function buildUserPrompt(
 
   // If this is a fresh conversation (no prior messages), inject a random topic starter
   const topicStarter = !messageContext
-    ? CONVERSATION_STARTERS[Math.floor(Math.random() * CONVERSATION_STARTERS.length)](participants)
+    ? CONVERSATION_STARTERS[Math.floor(Math.random() * CONVERSATION_STARTERS.length)]()
     : '';
 
   if (conversationType === 'event') {
