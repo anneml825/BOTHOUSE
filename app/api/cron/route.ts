@@ -90,103 +90,107 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Could not get or create session' }, { status: 500 });
   }
 
-  // ---- Load recent chat context -----------------------------------
-  const { data: recentRows } = await supabase
-    .from('bot_messages')
-    .select('bot_id, message, created_at')
-    .eq('session_id', session.id)
-    .order('created_at', { ascending: false })
-    .limit(12);
-
-  const recentMessages = (recentRows || []).reverse(); // oldest first
-  const recentSpeakers = recentMessages.slice(-5).map((m: { bot_id: string }) => m.bot_id as BotId);
-  const context: Array<{ botId: BotId; message: string }> = recentMessages.map(
-    (m: { bot_id: string; message: string }) => ({ botId: m.bot_id as BotId, message: m.message })
-  );
-
-  // ---- Director decides who talks + how ---------------------------
-  const decision = getNextConversation(recentSpeakers, BOT_IDS);
+  // ---- Load shared data once — reused across all rounds -----------
+  const allRelationships = await loadAllRelationships(supabase);
   const botNames = Object.fromEntries(
     Object.entries(BOTS).map(([id, b]) => [id, b.name])
   ) as Record<BotId, string>;
 
-  // ---- Load house-wide relationships once (shared across all bots) --
-  // These get injected into every bot's system prompt so they
-  // know who's dating, who has beef, who formed alliances, etc.
-  const allRelationships = await loadAllRelationships(supabase);
+  // ---- Run as many conversation rounds as time allows -------------
+  // Each round = one full exchange between 2-3 bots (~3-5s on Haiku).
+  // Hobby plan cuts us off at 10s so we get ~2 rounds per cron call.
+  // Pro plan gives 60s so we get many more.
+  // cron-job.org fires every minute → messages appear every ~10-15s.
+  const TIME_BUDGET_MS = 8500; // leave buffer before Vercel cuts the function
+  const startTime = Date.now();
+  const allGenerated: Array<{ botId: BotId; dramaScore: number }> = [];
+  let lastDecision = {
+    conversationType: 'casual' as string,
+    speakers: [] as BotId[],
+    eventPrompt: undefined as string | undefined,
+  };
 
-  // ---- Generate each bot's message in sequence --------------------
-  const thisConvoContext = [...context]; // grows as each bot speaks
-  const generated: Array<{ botId: BotId; dramaScore: number }> = [];
+  for (let round = 0; round < 20; round++) {
+    if (Date.now() - startTime > TIME_BUDGET_MS) break;
 
-  for (const botId of decision.speakers) {
-    try {
-      // Get the base system prompt from DB (fully seeded character bible)
-      const { data: botRow } = await supabase
-        .from('bots')
-        .select('system_prompt')
-        .eq('id', botId)
-        .single();
+    // Fresh context every round so bots react to what was just said
+    const { data: recentRows } = await supabase
+      .from('bot_messages')
+      .select('bot_id, message, created_at')
+      .eq('session_id', session.id)
+      .order('created_at', { ascending: false })
+      .limit(12);
 
-      const basePrompt = botRow?.system_prompt || buildFallbackSystemPrompt(botId);
+    const recentMessages = (recentRows || []).reverse();
+    const recentSpeakers = recentMessages.slice(-5).map((m: { bot_id: string }) => m.bot_id as BotId);
+    const context: Array<{ botId: BotId; message: string }> = recentMessages.map(
+      (m: { bot_id: string; message: string }) => ({ botId: m.bot_id as BotId, message: m.message })
+    );
 
-      // Load what this bot personally remembers from past episodes
-      const memories = await loadBotMemories(supabase, botId);
+    const decision = getNextConversation(recentSpeakers, BOT_IDS);
+    lastDecision = decision;
 
-      // Build the memory context block and append it to the system prompt
-      // so the bot enters every conversation already knowing its history
-      const memoryBlock = buildMemoryContext(memories, allRelationships, botId, botNames);
-      const systemPrompt = basePrompt + memoryBlock;
+    const thisConvoContext = [...context];
 
-      // Last 6 messages as conversation context for the Anthropic call
-      const contextMessages = thisConvoContext.slice(-6).map((m) => ({
-        role: (m.botId === botId ? 'assistant' : 'user') as 'user' | 'assistant',
-        content: `${botNames[m.botId] || m.botId}: ${m.message}`,
-      }));
+    for (const botId of decision.speakers) {
+      try {
+        const { data: botRow } = await supabase
+          .from('bots')
+          .select('system_prompt')
+          .eq('id', botId)
+          .single();
 
-      const userPrompt = buildUserPrompt(
-        {
-          botId,
-          conversationType: decision.conversationType,
+        const basePrompt = botRow?.system_prompt || buildFallbackSystemPrompt(botId);
+        const memories = await loadBotMemories(supabase, botId);
+        const memoryBlock = buildMemoryContext(memories, allRelationships, botId, botNames);
+        const systemPrompt = basePrompt + memoryBlock;
+
+        const contextMessages = thisConvoContext.slice(-6).map((m) => ({
+          role: (m.botId === botId ? 'assistant' : 'user') as 'user' | 'assistant',
+          content: `${botNames[m.botId] || m.botId}: ${m.message}`,
+        }));
+
+        const userPrompt = buildUserPrompt(
+          {
+            botId,
+            conversationType: decision.conversationType,
+            participants: decision.speakers,
+            recentMessages: thisConvoContext,
+            eventPrompt: decision.eventPrompt,
+            sessionId: session.id,
+          },
+          botNames
+        );
+
+        // Claude Haiku — fast and cheap, ~1-2 seconds per message
+        const message = await generateBotMessage(systemPrompt, contextMessages, userPrompt);
+        const dramaScore = calculateDramaScore(message);
+
+        // Save immediately → Supabase Realtime broadcasts to all viewers NOW
+        await supabase.from('bot_messages').insert({
+          session_id: session.id,
+          bot_id: botId,
+          message,
+          conversation_type: decision.conversationType,
           participants: decision.speakers,
-          recentMessages: thisConvoContext,
-          eventPrompt: decision.eventPrompt,
-          sessionId: session.id,
-        },
-        botNames
-      );
+          drama_score: dramaScore,
+          is_highlight: dramaScore >= 8,
+        });
 
-      // Claude Haiku — fast and cheap, ~1-2 seconds per message
-      const message = await generateBotMessage(systemPrompt, contextMessages, userPrompt);
-      const dramaScore = calculateDramaScore(message);
-
-      // Save immediately → Supabase Realtime broadcasts to all viewers NOW
-      await supabase.from('bot_messages').insert({
-        session_id: session.id,
-        bot_id: botId,
-        message,
-        conversation_type: decision.conversationType,
-        participants: decision.speakers,
-        drama_score: dramaScore,
-        is_highlight: dramaScore >= 8,
-      });
-
-      // Append to local context so the next bot in this conversation
-      // has something to actually respond to
-      thisConvoContext.push({ botId, message });
-      generated.push({ botId, dramaScore });
-    } catch (err) {
-      // Log but don't abort — let the other bots in the convo still run
-      console.error(`[cron] Failed for bot ${botId}:`, err);
+        thisConvoContext.push({ botId, message });
+        allGenerated.push({ botId, dramaScore });
+      } catch (err) {
+        console.error(`[cron] Failed for bot ${botId} (round ${round}):`, err);
+      }
     }
   }
 
   return NextResponse.json({
     ok: true,
     sessionId: session.id,
-    conversationType: decision.conversationType,
-    speakers: decision.speakers,
-    messagesGenerated: generated.length,
+    conversationType: lastDecision.conversationType,
+    speakers: lastDecision.speakers,
+    messagesGenerated: allGenerated.length,
   });
 }
 
