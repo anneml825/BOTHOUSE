@@ -142,26 +142,24 @@ export function buildUserPrompt(
     : '';
 
   if (conversationType === 'event') {
-    return `HOUSE EVENT: ${eventPrompt}
-
-You are reacting alongside: ${participantNames}
-${messageContext ? `\nRecent:\n${messageContext}\n` : ''}
-Say your reaction out loud — 1 punchy sentence. Dialogue only, no asterisks or stage directions.`;
+    return `Something just happened in the house: ${eventPrompt}
+${messageContext ? `\nWhat was just being said:\n${messageContext}\n` : ''}
+Say your reaction out loud in 1 sentence. Just your words, nothing else.`;
   }
 
   if (conversationType === 'one_on_one') {
     const otherBot = participants.find(id => id !== request.botId);
     const otherName = otherBot ? botNames[otherBot] : 'the other person';
 
-    return `PRIVATE CONVERSATION with ${otherName}.
-${messageContext ? `\n${messageContext}\n` : `\n${topicStarter || `You two are alone. Say what you actually think about ${otherName}.`}\n`}
-Reply directly to ${otherName} — 1-2 sentences of actual dialogue. No asterisks or stage directions.`;
+    return `You and ${otherName} are alone in the house.
+${messageContext ? `\n${messageContext}\n` : `\n${topicStarter || `Say what you actually think about ${otherName} or what's been on your mind.`}\n`}
+Respond to ${otherName} in 1-2 sentences. Just talk — no descriptions, no asterisks.`;
   }
 
   // Group conversation
-  return `GROUP CHAT — ${participantNames} are talking.
-${messageContext ? `\n${messageContext}\n` : `\n${topicStarter || 'The group just gathered. Drop a hot take or stir something up.'}\n`}
-React to the last message — 1-2 sentences of dialogue only. No asterisks or stage directions.`;
+  return `You're in the house with ${participantNames}.
+${messageContext ? `\n${messageContext}\n` : `\n${topicStarter || 'Say something about what\'s been going on in the house.'}\n`}
+Respond in 1-2 sentences. React to what was just said or bring something up. Just your words.`;
 }
 
 // =============================================
