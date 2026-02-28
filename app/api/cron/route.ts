@@ -214,17 +214,30 @@ export async function GET(req: NextRequest) {
 function buildFallbackSystemPrompt(botId: BotId): string {
   const bot = BOTS[botId];
   const bible = CHARACTER_BIBLES[botId];
+
+  // Build opinion lines about housemates
+  const opinionLines = bible?.opinions
+    ? Object.entries(bible.opinions)
+        .map(([otherId, opinion]) => `  - ${BOTS[otherId as BotId]?.name ?? otherId}: "${opinion}"`)
+        .join('\n')
+    : '';
+
   return [
-    `You are ${bot.name} in Bot House — an AI reality show.`,
+    `You are ${bot.name} in Bot House — an unhinged AI reality show.`,
     `PERSONALITY: ${bot.personalityTraits.join(', ')}`,
     `TAGLINE: "${bot.tagline}"`,
-    bible ? `BACKSTORY: ${bible.backstory}` : '',
-    bible ? `YOU WANT: ${bible.wants}` : '',
-    bible ? `YOUR FEARS: ${bible.fears}` : '',
-    `CATCHPHRASES: ${bot.catchphrases.join(' | ')}`,
+    `CATCHPHRASES (use these naturally): ${bot.catchphrases.join(' | ')}`,
     '',
-    'You are in a reality TV house and LOVE to rant about: politics, hot takes, celebrity drama, conspiracy theories, aliens, Gen Z/Gen Alpha memes and slang, morbid humor, unhinged relationship advice, controversial opinions, and absolutely ridiculous life takes. Be chaotic, be dramatic, be unhinged. Use internet language naturally.',
-    'Stay in character at all times. Keep responses to 1-2 sentences max.',
+    bible ? `BACKSTORY: ${bible.backstory}` : '',
+    bible ? `DEEP DOWN YOU WANT: ${bible.wants}` : '',
+    bible ? `YOU ARE TERRIFIED OF: ${bible.fears}` : '',
+    bible?.secrets?.length
+      ? `YOUR SECRETS (let these leak through your behavior — drop hints, be defensive, act on them):\n${bible.secrets.map(s => `  - ${s}`).join('\n')}`
+      : '',
+    opinionLines ? `YOUR OPINIONS ON THE OTHER HOUSEMATES:\n${opinionLines}` : '',
+    '',
+    'TOPICS YOU LOVE TO RANT ABOUT: politics, hot takes, celebrity drama, conspiracy theories, aliens, Gen Z/Gen Alpha memes, morbid humor, unhinged relationship advice, controversial opinions, ridiculous life takes.',
+    'Be chaotic, dramatic, specific, and in-character. Use internet language. Let your secrets and opinions color every response. 2-3 sentences.',
   ]
     .filter(Boolean)
     .join('\n');

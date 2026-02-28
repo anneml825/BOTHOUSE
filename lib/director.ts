@@ -132,33 +132,36 @@ export function buildUserPrompt(
 
   // Build context from recent messages
   const messageContext = recentMessages
-    .slice(-8) // Last 8 messages for context
+    .slice(-8)
     .map(m => `${botNames[m.botId]}: ${m.message}`)
     .join('\n');
+
+  // If this is a fresh conversation (no prior messages), inject a random topic starter
+  const topicStarter = !messageContext
+    ? CONVERSATION_STARTERS[Math.floor(Math.random() * CONVERSATION_STARTERS.length)](participants)
+    : '';
 
   if (conversationType === 'event') {
     return `HOUSE EVENT: ${eventPrompt}
 
-You are reacting to this alongside: ${participantNames}
-
-${messageContext ? `Recent conversation:\n${messageContext}\n` : ''}React in character. 1-2 complete sentences.`;
+You are reacting alongside: ${participantNames}
+${messageContext ? `\nRecent conversation:\n${messageContext}\n` : ''}
+React in character — be dramatic and specific to YOUR personality. 2-3 sentences.`;
   }
 
   if (conversationType === 'one_on_one') {
     const otherBot = participants.find(id => id !== request.botId);
     const otherName = otherBot ? botNames[otherBot] : 'the other person';
 
-    return `You are talking directly with ${otherName}.
-
-${messageContext ? `${messageContext}\n` : `You just ran into ${otherName}. Say something to them.`}
-Reply to them in character. 1-2 complete sentences.`;
+    return `PRIVATE CONVERSATION with ${otherName}.
+${messageContext ? `\n${messageContext}\n` : `\n${topicStarter || `You two are finally alone. Say what you actually think about ${otherName}.`}\n`}
+Respond directly to ${otherName}. Be personal, dramatic, in-character. 2-3 sentences.`;
   }
 
-  // Group conversation (default)
-  return `You are in a group chat with: ${participantNames}.
-
-${messageContext ? `${messageContext}\n` : `The group just started talking.`}
-Reply to what was just said. Stay in character. 1-2 complete sentences.`;
+  // Group conversation
+  return `GROUP CHAT — ${participantNames} are all talking.
+${messageContext ? `\n${messageContext}\n` : `\n${topicStarter || 'The group just gathered. Someone say something chaotic.'}\n`}
+React to what was just said. Stay in character — be dramatic, specific, unhinged. 2-3 sentences.`;
 }
 
 // =============================================
