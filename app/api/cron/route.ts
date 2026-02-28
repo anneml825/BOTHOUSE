@@ -128,7 +128,10 @@ export async function GET(req: NextRequest) {
 
     // Count how many consecutive messages are in the same convo thread
     const lastMsg = recentRows?.[0];
-    const lastConvoSpeakers: BotId[] = (lastMsg?.participants as BotId[]) || [];
+    const validBotIdSet = new Set<string>(BOT_IDS);
+    // Filter out retired bot IDs so we never continue a conversation with them
+    const lastConvoSpeakers: BotId[] = ((lastMsg?.participants as string[]) || [])
+      .filter(id => validBotIdSet.has(id)) as BotId[];
     const lastKey = [...lastConvoSpeakers].sort().join(',');
     let convoStreak = 0;
     for (const msg of (recentRows || [])) {
