@@ -22,9 +22,26 @@ const IS_DEMO = process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
 export default function HomePage() {
   const [chaosLevel, setChaosLevel] = useState(42);
   const [viewerCount, setViewerCount] = useState(1337);
-  const [isLive] = useState(IS_DEMO ? true : false); // Demo shows as always-live
+  const [isLive, setIsLive] = useState(IS_DEMO ? true : false);
 
   const nextSession = getNextSessionTime(0); // Midnight UTC
+
+  // Poll /api/session every 30s to detect when a live session starts/ends
+  useEffect(() => {
+    if (IS_DEMO) return; // demo is always-live, no need to poll
+    const check = async () => {
+      try {
+        const res = await fetch('/api/session');
+        const json = await res.json();
+        setIsLive(json?.data?.isLive ?? false);
+      } catch {
+        // ignore network errors, keep current state
+      }
+    };
+    check();
+    const interval = setInterval(check, 30_000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Slowly drift chaos level for demo effect
   useEffect(() => {
