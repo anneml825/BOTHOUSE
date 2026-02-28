@@ -104,10 +104,9 @@ export async function GET(req: NextRequest) {
   const TIME_BUDGET_MS = 8500; // leave buffer before Vercel cuts the function
   const startTime = Date.now();
   const allGenerated: Array<{ botId: BotId; dramaScore: number }> = [];
-  let lastDecision = {
-    conversationType: 'casual' as string,
-    speakers: [] as BotId[],
-    eventPrompt: undefined as string | undefined,
+  let lastDecision: { conversationType: string; speakers: BotId[]; eventPrompt?: string } = {
+    conversationType: 'casual',
+    speakers: [],
   };
 
   for (let round = 0; round < 20; round++) {
