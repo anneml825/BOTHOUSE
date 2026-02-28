@@ -36,7 +36,7 @@ export async function generateBotMessage(
 
   const response = await client.messages.create({
     model: 'claude-haiku-4-5-20251001', // Cheapest and fastest — perfect for bots
-    max_tokens: 150, // Keep messages short (1-3 sentences)
+    max_tokens: 80, // Keep messages short (1-2 sentences)
     system: systemPrompt,
     messages: [
       ...contextMessages,

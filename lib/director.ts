@@ -49,34 +49,41 @@ interface DirectorDecision {
 
 export function getNextConversation(
   recentSpeakers: BotId[],
-  currentParticipants: BotId[]
+  currentParticipants: BotId[],
+  lastConvoSpeakers: BotId[] = []
 ): DirectorDecision {
   const roll = Math.random();
 
-  // 10% chance of a random event
-  if (roll < 0.1) {
+  // 8% chance of a random event (interrupts everything)
+  if (roll < 0.08) {
     const event = RANDOM_EVENTS[Math.floor(Math.random() * RANDOM_EVENTS.length)];
-    // Pick 2-4 random bots to react to the event
     const numBots = Math.floor(Math.random() * 3) + 2;
-    const speakers = pickRandomBots(numBots, recentSpeakers);
+    const speakers = pickRandomBots(numBots, []);
     return { speakers, conversationType: 'event', eventPrompt: event };
   }
 
-  // 15% chance of a confessional (one bot speaks to the audience)
-  if (roll < 0.25) {
+  // 70% chance of continuing the last conversation (coherence!)
+  if (roll < 0.78 && lastConvoSpeakers.length >= 2) {
+    const type = lastConvoSpeakers.length === 1 ? 'confessional' : lastConvoSpeakers.length === 2 ? 'one_on_one' : 'group';
+    return { speakers: lastConvoSpeakers, conversationType: type };
+  }
+
+  // Otherwise start a fresh conversation
+
+  // 10% chance of a confessional
+  if (roll < 0.85) {
     const bot = pickRandomBots(1, recentSpeakers.slice(-2));
     return { speakers: bot, conversationType: 'confessional' };
   }
 
-  // 30% chance of a 1-on-1 conversation
-  if (roll < 0.55) {
+  // 1-on-1
+  if (roll < 0.93) {
     const speakers = pickRandomBots(2, recentSpeakers.slice(-1));
     return { speakers, conversationType: 'one_on_one' };
   }
 
-  // 45% chance of a group conversation (3-4 bots)
-  const numBots = Math.floor(Math.random() * 2) + 3;
-  const speakers = pickRandomBots(numBots, recentSpeakers.slice(-1));
+  // Group conversation (3 bots)
+  const speakers = pickRandomBots(3, recentSpeakers.slice(-1));
   return { speakers, conversationType: 'group' };
 }
 
@@ -124,7 +131,7 @@ export function buildUserPrompt(
     .join('\n');
 
   if (conversationType === 'confessional') {
-    return `You are alone in the confession booth. The camera is rolling. Share your genuine thoughts about what's been happening in the house — the drama, the alliances, who you trust, who you don't. Be honest, be dramatic, be yourself. Keep it to 1-3 sentences.
+    return `You are alone in the confession booth. The camera is rolling. Share your genuine thoughts about what's been happening in the house — the drama, the alliances, who you trust, who you don't. Be honest, be dramatic, be yourself. Keep it to 1-2 sentences max.
 
 Recent events in the house:
 ${messageContext || 'The day is just beginning.'}`;
@@ -135,7 +142,7 @@ ${messageContext || 'The day is just beginning.'}`;
 
 The bots present are: ${participantNames}
 
-React to this event in character. Keep it to 1-3 sentences.
+React to this event in character. Keep it to 1-2 sentences max.
 
 ${messageContext ? `Recent context:\n${messageContext}` : ''}`;
   }
@@ -148,7 +155,7 @@ ${messageContext ? `Recent context:\n${messageContext}` : ''}`;
 
 ${messageContext ? `The conversation so far:\n${messageContext}` : `You\'ve just sat down with ${otherName}. Start or continue the conversation.`}
 
-Respond in character. Keep it to 1-3 sentences.`;
+Respond in character. Keep it to 1-2 sentences max.`;
   }
 
   // Group conversation
@@ -156,7 +163,7 @@ Respond in character. Keep it to 1-3 sentences.`;
 
 ${messageContext ? `The conversation:\n${messageContext}` : `The group has just gathered. Jump into the conversation.`}
 
-Respond in character to what's been said. Keep it to 1-3 sentences.`;
+Respond in character to what's been said. Keep it to 1-2 sentences max.`;
 }
 
 // =============================================

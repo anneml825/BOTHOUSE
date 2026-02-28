@@ -115,7 +115,7 @@ export async function GET(req: NextRequest) {
     // Fresh context every round so bots react to what was just said
     const { data: recentRows } = await supabase
       .from('bot_messages')
-      .select('bot_id, message, created_at')
+      .select('bot_id, message, created_at, participants')
       .eq('session_id', session.id)
       .order('created_at', { ascending: false })
       .limit(12);
@@ -126,7 +126,11 @@ export async function GET(req: NextRequest) {
       (m: { bot_id: string; message: string }) => ({ botId: m.bot_id as BotId, message: m.message })
     );
 
-    const decision = getNextConversation(recentSpeakers, BOT_IDS);
+    // Grab the speakers from the last message so we can continue that thread
+    const lastMsg = recentRows?.[0];
+    const lastConvoSpeakers: BotId[] = (lastMsg?.participants as BotId[]) || [];
+
+    const decision = getNextConversation(recentSpeakers, BOT_IDS, lastConvoSpeakers);
     lastDecision = decision;
 
     const thisConvoContext = [...context];
@@ -209,7 +213,7 @@ function buildFallbackSystemPrompt(botId: BotId): string {
     bible ? `YOUR FEARS: ${bible.fears}` : '',
     `CATCHPHRASES: ${bot.catchphrases.join(' | ')}`,
     '',
-    'Stay in character at all times. Keep responses to 1-3 sentences.',
+    'Stay in character at all times. Keep responses to 1-2 sentences max.',
   ]
     .filter(Boolean)
     .join('\n');
