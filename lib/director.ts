@@ -150,10 +150,11 @@ export function buildUserPrompt(
     ? `\nSomebody just brought up "${viewerTopic}" — weave it into what you're saying naturally. Don't say "viewers" or "chat".`
     : '';
 
-  // Recent viewer messages — extract topics and inject naturally with zero meta-framing.
-  // Bots just talk about it. Never reference "chat", "viewers", or "the people watching".
+  // Recent viewer messages — pick a topic out of them and actually discuss it.
+  // Bots should understand what the thing IS and make a real connection to the situation.
+  // Never reference "chat", "viewers", or "the people watching".
   const viewerChatBlock = recentViewerMessages && recentViewerMessages.length > 0
-    ? `These topics just came up in the conversation:\n${recentViewerMessages.map(m => `  - ${m}`).join('\n')}\n\nWeave one of these into what you say naturally — like it just occurred to you or someone brought it up. Do NOT say "chat", "viewers", "people are saying", or anything meta. Just talk about the actual topic.`
+    ? `Someone just brought this up:\n${recentViewerMessages.map(m => `  - ${m}`).join('\n')}\n\nPick the most interesting word or idea in there. Think about what it actually IS — what it means, what it references, what it's known for — then find the real connection to what's happening in this house right now and talk about THAT. Don't just drop the word. Make the meaning land. Never say "chat", "viewers", or "people are saying".`
     : '';
 
   // Random drama starter only for truly fresh conversations (no messages, no viewer topic)
