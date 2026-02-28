@@ -11,6 +11,7 @@ import { getAnthropicClient } from './anthropic';
 // =============================================
 
 export function isShowTime(): boolean {
+  if (process.env.FORCE_SHOW === 'true') return true;
   const tz = process.env.SHOW_TIMEZONE || 'America/New_York';
   const hour = getCurrentHour(tz);
   // 19:00–22:59 = show is live
