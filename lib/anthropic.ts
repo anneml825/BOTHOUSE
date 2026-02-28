@@ -49,5 +49,12 @@ export async function generateBotMessage(
     throw new Error('Unexpected response type from Anthropic');
   }
 
-  return content.text.trim();
+  // Strip asterisk stage directions like *pauses* or *nods slowly* — Haiku ignores prompt rules
+  const stripped = content.text
+    .trim()
+    .replace(/\*[^*]+\*/g, '')   // remove *action text*
+    .replace(/\s{2,}/g, ' ')     // collapse double spaces
+    .trim();
+
+  return stripped || content.text.trim(); // fallback if stripping nukes the whole message
 }

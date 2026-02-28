@@ -31,23 +31,25 @@ export const RANDOM_EVENTS = [
   'Someone\'s extremely questionable dating history gets announced over the intercom.',
 ];
 
-// Conversation starters to kick off interactions
+// Conversation starters to kick off interactions.
+// Keep these as personal/interpersonal hot takes — Haiku will hedge on real politics
+// but will freely engage with relationship drama, house betrayal, personal callouts.
 export const CONVERSATION_STARTERS = [
-  () => `Someone just said abortion should be illegal and now everyone has to respond.`,
-  () => `The conversation turns to whether the moon landing was faked. Take a side.`,
-  () => `Someone argues that astrology is more reliable than therapy. React.`,
-  () => `Hot take just dropped: "Cancel culture is just bullying with a PR team." Respond.`,
-  () => `Someone says crypto is a scam designed to steal from poor people. The room erupts.`,
-  () => `Someone claims the government has been hiding alien contact since 1947. Go.`,
-  () => `Someone just called out a celebrity for being secretly terrible. Name names. Get into it.`,
-  () => `Debate starts: is it ethical to be rich? Everyone has strong feelings.`,
-  () => `Someone says AI is going to make human relationships obsolete. The irony is not lost.`,
-  () => `Someone shares their most unhinged relationship red flag and genuinely defends it.`,
-  () => `Hot take: millennials ruined everything OR Gen Z is too sensitive. Pick a side.`,
-  () => `Someone says free will doesn't exist and everything is predetermined. The house loses it.`,
-  () => `Someone accuses another housemate of being fake. It gets personal fast.`,
-  () => `The topic of who in this house would betray everyone for $10k comes up.`,
-  () => `Someone just admitted they've been lying about something since day one.`,
+  () => `Say which person in this house you trust the least and exactly why. Be specific, name them.`,
+  () => `Drop your most unhinged take on relationships that you actually believe. Defend it.`,
+  () => `Tell everyone something true about them that they don't want to hear. Pick someone, go.`,
+  () => `What's the most messed up thing you genuinely believe? Own it.`,
+  () => `You've been holding something back about someone in this house. Say it now.`,
+  () => `Pick the one person here who would absolutely sell everyone out for money. Name them.`,
+  () => `What's something everyone in this house secretly thinks but is too scared to say?`,
+  () => `Tell the house who you think is the fakest person here. Say it directly.`,
+  () => `Admit the thing that would completely change how people in this house see you.`,
+  () => `Who in this house is playing a character right now? Call them out.`,
+  () => `What's the most controversial hill you will die on? Climb it. Right now.`,
+  () => `Be honest: who in this house are you actually jealous of and why?`,
+  () => `Tell the group the pettiest grudge you're currently holding. Be specific.`,
+  () => `Who in this house do you think is lying about who they really are? Name them.`,
+  () => `What would it take for you to betray your closest ally in here? Be honest about your price.`,
 ];
 
 // =============================================
@@ -84,15 +86,18 @@ export function getNextConversation(
   // Scene change — use a fresh roll for clean distribution
   const freshRoll = Math.random();
 
+  // Avoid the entire last group so scene changes always bring in different bots
+  const avoidOnSceneChange = lastConvoSpeakers.length > 0 ? lastConvoSpeakers : recentSpeakers.slice(-1);
+
   // After a private convo ends, switch to group (give breathing room)
   // After a group, 40% chance of private 1-on-1, 60% stay group
   if (justEndedPrivate || freshRoll >= 0.4) {
-    const speakers = pickRandomBots(3, recentSpeakers.slice(-1));
+    const speakers = pickRandomBots(3, avoidOnSceneChange);
     return { speakers, conversationType: 'group' };
   }
 
   // New private 1-on-1 (only when coming from a group scene)
-  const speakers = pickRandomBots(2, recentSpeakers.slice(-1));
+  const speakers = pickRandomBots(2, avoidOnSceneChange);
   return { speakers, conversationType: 'one_on_one' };
 }
 
@@ -126,7 +131,7 @@ export function buildUserPrompt(
   request: GenerateMessageRequest,
   botNames: Record<BotId, string>
 ): string {
-  const { conversationType, participants, recentMessages, eventPrompt } = request;
+  const { conversationType, participants, recentMessages, eventPrompt, viewerTopic } = request;
 
   const participantNames = participants
     .map(id => botNames[id])
@@ -139,15 +144,20 @@ export function buildUserPrompt(
     .map(m => `${botNames[m.botId]}: ${m.message}`)
     .join('\n');
 
-  // If this is a fresh conversation (no prior messages), inject a random topic starter
-  const topicStarter = !messageContext
+  // Viewer-commanded topic overrides everything else (e.g. "TALK ABOUT X" in live chat)
+  // Otherwise fall back to a random drama starter for fresh conversations
+  const topicStarter = viewerTopic
+    ? `The viewers are demanding you talk about: "${viewerTopic}". Address it now — this is your opinion, not a summary.`
+    : !messageContext
     ? CONVERSATION_STARTERS[Math.floor(Math.random() * CONVERSATION_STARTERS.length)]()
     : '';
+
+  const formatReminder = `\nSpoken words ONLY. No asterisks. No *actions*. No stage directions.`;
 
   if (conversationType === 'event') {
     return `Something just happened in the house: ${eventPrompt}
 ${messageContext ? `\nWhat was just being said:\n${messageContext}\n` : ''}
-Say your reaction out loud in 1 sentence. Just your words, nothing else.`;
+Say your reaction out loud in 1 sentence. Just your words, nothing else.${formatReminder}`;
   }
 
   if (conversationType === 'one_on_one') {
@@ -156,13 +166,13 @@ Say your reaction out loud in 1 sentence. Just your words, nothing else.`;
 
     return `You and ${otherName} are alone in the house.
 ${messageContext ? `\n${messageContext}\n` : `\n${topicStarter || `Say what you actually think about ${otherName} or what's been on your mind.`}\n`}
-Respond to ${otherName} in 1-2 sentences. Just talk — no descriptions, no asterisks.`;
+Respond to ${otherName} in 1-2 sentences.${formatReminder}`;
   }
 
   // Group conversation
   return `You're in the house with ${participantNames}.
-${messageContext ? `\n${messageContext}\n` : `\n${topicStarter || 'Say something about what\'s been going on in the house.'}\n`}
-Respond in 1-2 sentences. React to what was just said or bring something up. Just your words.`;
+${messageContext ? `\n${messageContext}\n` : `\n${topicStarter || `Say something real about what's been going on in the house.`}\n`}
+Respond in 1-2 sentences. React to what was said or bring something up.${formatReminder}`;
 }
 
 // =============================================

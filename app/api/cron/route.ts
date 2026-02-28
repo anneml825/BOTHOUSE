@@ -96,6 +96,29 @@ export async function GET(req: NextRequest) {
     Object.entries(BOTS).map(([id, b]) => [id, b.name])
   ) as Record<BotId, string>;
 
+  // ---- Check for viewer "TALK ABOUT X" commands in live chat ----------
+  // If a viewer typed "TALK ABOUT potatoes" in the last 3 minutes,
+  // the bots will address that topic this round. Most recent command wins.
+  let viewerTopic: string | undefined;
+  const threeMinutesAgo = new Date(Date.now() - 3 * 60 * 1000).toISOString();
+  const { data: recentViewerMsgs } = await supabase
+    .from('viewer_messages')
+    .select('message')
+    .eq('session_id', session.id)
+    .gte('created_at', threeMinutesAgo)
+    .order('created_at', { ascending: false })
+    .limit(30);
+
+  if (recentViewerMsgs) {
+    for (const vm of recentViewerMsgs) {
+      const match = (vm.message as string).match(/\bTALK\s+ABOUT\s+(.+)/i);
+      if (match) {
+        viewerTopic = match[1].trim().slice(0, 120);
+        break;
+      }
+    }
+  }
+
   // ---- Run as many conversation rounds as time allows -------------
   // Each round = one full exchange between 2-3 bots (~3-5s on Haiku).
   // Hobby plan cuts us off at 10s so we get ~2 rounds per cron call.
@@ -174,6 +197,7 @@ export async function GET(req: NextRequest) {
             recentMessages: thisConvoContext,
             eventPrompt: decision.eventPrompt,
             sessionId: session.id,
+            viewerTopic,
           },
           botNames
         );
@@ -207,6 +231,7 @@ export async function GET(req: NextRequest) {
     conversationType: lastDecision.conversationType,
     speakers: lastDecision.speakers,
     messagesGenerated: allGenerated.length,
+    viewerTopic: viewerTopic ?? null,
   });
 }
 

@@ -210,6 +210,7 @@ export interface GenerateMessageRequest {
   recentMessages: Array<{ botId: BotId; message: string }>;
   eventPrompt?: string;
   sessionId?: string;
+  viewerTopic?: string; // Set when viewers command "TALK ABOUT X" in live chat
 }
 
 export interface GenerateMessageResponse {
