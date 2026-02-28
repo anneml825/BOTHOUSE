@@ -68,32 +68,26 @@ export function getNextConversation(
   // 8% chance of a random event (interrupts everything)
   if (roll < 0.08) {
     const event = RANDOM_EVENTS[Math.floor(Math.random() * RANDOM_EVENTS.length)];
-    const numBots = Math.floor(Math.random() * 3) + 2;
-    const speakers = pickRandomBots(numBots, []);
+    const speakers = pickRandomBots(3, []);
     return { speakers, conversationType: 'event', eventPrompt: event };
   }
 
   // 70% chance of continuing the last conversation (coherence!)
   if (roll < 0.78 && lastConvoSpeakers.length >= 2) {
-    const type = lastConvoSpeakers.length === 1 ? 'confessional' : lastConvoSpeakers.length === 2 ? 'one_on_one' : 'group';
+    const type = lastConvoSpeakers.length === 2 ? 'one_on_one' : 'group';
     return { speakers: lastConvoSpeakers, conversationType: type };
   }
 
-  // Otherwise start a fresh conversation
+  // Fresh conversation — use a NEW roll so probabilities are clean
+  const freshRoll = Math.random();
 
-  // 10% chance of a confessional
-  if (roll < 0.85) {
-    const bot = pickRandomBots(1, recentSpeakers.slice(-2));
-    return { speakers: bot, conversationType: 'confessional' };
-  }
-
-  // 1-on-1
-  if (roll < 0.93) {
+  // 40% 1-on-1
+  if (freshRoll < 0.4) {
     const speakers = pickRandomBots(2, recentSpeakers.slice(-1));
     return { speakers, conversationType: 'one_on_one' };
   }
 
-  // Group conversation (3 bots)
+  // 60% group (3 bots — gives 3 messages per cron call)
   const speakers = pickRandomBots(3, recentSpeakers.slice(-1));
   return { speakers, conversationType: 'group' };
 }
@@ -141,40 +135,29 @@ export function buildUserPrompt(
     .map(m => `${botNames[m.botId]}: ${m.message}`)
     .join('\n');
 
-  if (conversationType === 'confessional') {
-    return `You are alone in the confession booth. The camera is rolling. Share your genuine thoughts about what's been happening in the house — the drama, the alliances, who you trust, who you don't. Be honest, be dramatic, be yourself. Keep it to 1-2 sentences max.
-
-Recent events in the house:
-${messageContext || 'The day is just beginning.'}`;
-  }
-
   if (conversationType === 'event') {
     return `HOUSE EVENT: ${eventPrompt}
 
-The bots present are: ${participantNames}
+You are reacting to this alongside: ${participantNames}
 
-React to this event in character. Keep it to 1-2 sentences max.
-
-${messageContext ? `Recent context:\n${messageContext}` : ''}`;
+${messageContext ? `Recent conversation:\n${messageContext}\n` : ''}React in character. 1-2 complete sentences.`;
   }
 
   if (conversationType === 'one_on_one') {
     const otherBot = participants.find(id => id !== request.botId);
     const otherName = otherBot ? botNames[otherBot] : 'the other person';
 
-    return `You are having a private one-on-one conversation with ${otherName}. This is just the two of you — no one else can hear.
+    return `You are talking directly with ${otherName}.
 
-${messageContext ? `The conversation so far:\n${messageContext}` : `You\'ve just sat down with ${otherName}. Start or continue the conversation.`}
-
-Respond in character. Keep it to 1-2 sentences max.`;
+${messageContext ? `${messageContext}\n` : `You just ran into ${otherName}. Say something to them.`}
+Reply to them in character. 1-2 complete sentences.`;
   }
 
-  // Group conversation
-  return `You are in a group conversation with: ${participantNames}.
+  // Group conversation (default)
+  return `You are in a group chat with: ${participantNames}.
 
-${messageContext ? `The conversation:\n${messageContext}` : `The group has just gathered. Jump into the conversation.`}
-
-Respond in character to what's been said. Keep it to 1-2 sentences max.`;
+${messageContext ? `${messageContext}\n` : `The group just started talking.`}
+Reply to what was just said. Stay in character. 1-2 complete sentences.`;
 }
 
 // =============================================
