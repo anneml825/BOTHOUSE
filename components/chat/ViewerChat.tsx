@@ -44,12 +44,12 @@ function generateUsername(): string {
 // Seed messages to make the room feel alive on first load
 const DEMO_CHAT: ChatMessage[] = [
   { id: '1', username: 'chaotic_watcher_4291', message: 'CHAOS KAREN IS UNHINGED LMAOOO', created_at: new Date(Date.now() - 120000).toISOString() },
-  { id: '2', username: 'delulu_stan_8847', message: 'delulu has planned like 4 weddings already', created_at: new Date(Date.now() - 100000).toISOString() },
-  { id: '3', username: 'sigma_enjoyer_2231', message: 'npc nancy responding to everything the same way is killing me 💀', created_at: new Date(Date.now() - 80000).toISOString() },
+  { id: '2', username: 'delulu_stan_8847', message: 'delulu has planned like 4 weddings already 💍💍💍', created_at: new Date(Date.now() - 100000).toISOString() },
+  { id: '3', username: 'sigma_enjoyer_2231', message: 'doomer dani made art about her constipation and it SOLD. iconic.', created_at: new Date(Date.now() - 80000).toISOString() },
   { id: '4', username: 'dramatic_viewer_6609', message: 'sigma steve not blinking is my favorite storyline', created_at: new Date(Date.now() - 60000).toISOString() },
-  { id: '5', username: 'suspicious_fan_1138', message: 'conspiracy carl is ONTO something about npc nancy tho', created_at: new Date(Date.now() - 40000).toISOString() },
-  { id: '6', username: 'vibing_lurker_5521', message: 'bestie bot accidentally spilling secrets every 5 mins', created_at: new Date(Date.now() - 20000).toISOString() },
-  { id: '7', username: 'iconic_witness_3374', message: 'sir lancelot vs chaos karen is the crossover i needed', created_at: new Date(Date.now() - 10000).toISOString() },
+  { id: '5', username: 'suspicious_fan_1138', message: 'true crime tina has red string on EVERYONE including the host', created_at: new Date(Date.now() - 40000).toISOString() },
+  { id: '6', username: 'vibing_lurker_5521', message: 'bestie bot accidentally spilling secrets every 5 mins 😭', created_at: new Date(Date.now() - 20000).toISOString() },
+  { id: '7', username: 'iconic_witness_3374', message: 'TALK ABOUT who peed in the pool', created_at: new Date(Date.now() - 10000).toISOString() },
 ];
 
 const FILLER_USERNAMES = [
@@ -58,13 +58,16 @@ const FILLER_USERNAMES = [
 ];
 const FILLER_MESSAGES = [
   'omg this is wild', 'chad-gpt and sigma steve are literally the same person lol',
-  'BESTIE BOT SPILLED AGAIN 😭', 'auntie wifi is the only sane one in there',
+  'BESTIE BOT SPILLED AGAIN 😭', 'auntie wifi knows EVERYTHING and says nothing',
   'dj glitch playing in my head rn', '404 brad is literally me at 3am no cap',
   'conspiracy carl connecting dots that don\'t exist', 'this is better than actual tv',
   'the chaos meter is about to explode', 'DRAMA ALERT fr fr',
   'sigma steve just stared into the void for 10 minutes',
   'delulu found her soulmate again (3rd this week)',
-  'npc nancy said "must have been the wind" again im deceased',
+  'doomer dani is the most unhinged person in that house and i respect it',
+  'true crime tina is about to crack this whole thing open',
+  'TALK ABOUT who the biggest liar in the house is',
+  'TALK ABOUT who would betray everyone for $10k',
 ];
 
 export default function ViewerChat({ sessionId, demoMode = true }: ViewerChatProps) {

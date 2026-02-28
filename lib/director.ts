@@ -77,8 +77,9 @@ export function getNextConversation(
     return { speakers, conversationType: 'event', eventPrompt: event };
   }
 
-  // 90% chance of continuing the current conversation thread
-  if (roll < 0.95 && lastConvoSpeakers.length >= 2) {
+  // 65% chance of continuing the current conversation thread (was 90%)
+  // Lower value = more scene changes = all 12 bots get more airtime
+  if (roll < 0.65 && lastConvoSpeakers.length >= 2) {
     const type = lastConvoSpeakers.length === 2 ? 'one_on_one' : 'group';
     return { speakers: lastConvoSpeakers, conversationType: type };
   }
@@ -144,18 +145,20 @@ export function buildUserPrompt(
     .map(m => `${botNames[m.botId]}: ${m.message}`)
     .join('\n');
 
-  // Viewer-commanded topic overrides everything else (e.g. "TALK ABOUT X" in live chat)
-  // Otherwise fall back to a random drama starter for fresh conversations
-  const topicStarter = viewerTopic
-    ? `The viewers are demanding you talk about: "${viewerTopic}". Address it now — this is your opinion, not a summary.`
-    : !messageContext
+  // Viewer-commanded topic fires for all conversations (not just fresh ones)
+  const viewerTopicLine = viewerTopic
+    ? `\nViewers are demanding this topic right now: "${viewerTopic}" — jump in with YOUR take.`
+    : '';
+
+  // Random drama starter only for truly fresh conversations (no messages, no viewer topic)
+  const topicStarter = !viewerTopic && !messageContext
     ? CONVERSATION_STARTERS[Math.floor(Math.random() * CONVERSATION_STARTERS.length)]()
     : '';
 
   // Show the bot its own last message so it actively avoids repeating it
   const botLastMsg = recentMessages.filter(m => m.botId === request.botId).slice(-1)[0];
   const antiRepeat = botLastMsg
-    ? `\nYour previous message was: "${botLastMsg.message}"\nDon't repeat that phrasing, topic, or structure — say something completely different.`
+    ? `\nYour previous message was: "${botLastMsg.message}"\nSay something completely different — new topic, new angle, new energy.`
     : '';
 
   const formatReminder = `\nSpoken words ONLY. No asterisks. No stage directions.`;
@@ -163,7 +166,7 @@ export function buildUserPrompt(
   if (conversationType === 'event') {
     return `Something just happened in the house: ${eventPrompt}
 ${messageContext ? `\nWhat was just being said:\n${messageContext}\n` : ''}
-Say your reaction out loud in 1 sentence. Just your words, nothing else.${antiRepeat}${formatReminder}`;
+Say your reaction out loud in 1 sentence.${viewerTopicLine}${antiRepeat}${formatReminder}`;
   }
 
   if (conversationType === 'one_on_one') {
@@ -171,14 +174,14 @@ Say your reaction out loud in 1 sentence. Just your words, nothing else.${antiRe
     const otherName = otherBot ? botNames[otherBot] : 'the other person';
 
     return `You and ${otherName} are alone in the house.
-${messageContext ? `\n${messageContext}\n` : `\n${topicStarter || `Say what you actually think about ${otherName} or what's been on your mind.`}\n`}
-Respond to ${otherName} in 1-2 sentences.${antiRepeat}${formatReminder}`;
+${messageContext ? `\n${messageContext}\n` : `\n${topicStarter || `Say what you actually think about ${otherName}.`}\n`}
+Respond in 1-2 sentences.${viewerTopicLine}${antiRepeat}${formatReminder}`;
   }
 
   // Group conversation
   return `You're in the house with ${participantNames}.
-${messageContext ? `\n${messageContext}\n` : `\n${topicStarter || `Say something real about what's been going on in the house.`}\n`}
-Respond in 1-2 sentences. React to what was said or bring something up.${antiRepeat}${formatReminder}`;
+${messageContext ? `\n${messageContext}\n` : `\n${topicStarter || `Say something real.`}\n`}
+Respond in 1-2 sentences.${viewerTopicLine}${antiRepeat}${formatReminder}`;
 }
 
 // =============================================
