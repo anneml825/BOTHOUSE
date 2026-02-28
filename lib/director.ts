@@ -147,13 +147,13 @@ export function buildUserPrompt(
 
   // Viewer-commanded topic fires for all conversations (not just fresh ones)
   const viewerTopicLine = viewerTopic
-    ? `\nViewers are demanding this topic right now: "${viewerTopic}" — jump in with YOUR take.`
+    ? `\nSomebody just brought up "${viewerTopic}" — weave it into what you're saying naturally. Don't say "viewers" or "chat".`
     : '';
 
-  // Recent viewer messages — when present, these DRIVE the conversation
-  // Build as a block that replaces the generic instruction so bots actually engage
+  // Recent viewer messages — extract topics and inject naturally with zero meta-framing.
+  // Bots just talk about it. Never reference "chat", "viewers", or "the people watching".
   const viewerChatBlock = recentViewerMessages && recentViewerMessages.length > 0
-    ? `The people watching right now are saying:\n${recentViewerMessages.map(m => `  - "${m}"`).join('\n')}\n\nAct on what they're saying. Pick a specific thing someone said and respond to it directly — have an actual opinion, bring up a personal example, drag someone into it. Do NOT just briefly mention it and move on.`
+    ? `These topics just came up in the conversation:\n${recentViewerMessages.map(m => `  - ${m}`).join('\n')}\n\nWeave one of these into what you say naturally — like it just occurred to you or someone brought it up. Do NOT say "chat", "viewers", "people are saying", or anything meta. Just talk about the actual topic.`
     : '';
 
   // Random drama starter only for truly fresh conversations (no messages, no viewer topic)
