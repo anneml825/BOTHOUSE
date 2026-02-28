@@ -150,11 +150,21 @@ export function buildUserPrompt(
     ? `\nSomebody just brought up "${viewerTopic}" — weave it into what you're saying naturally. Don't say "viewers" or "chat".`
     : '';
 
-  // Recent viewer messages — pick a topic out of them and actually discuss it.
-  // Bots should understand what the thing IS and make a real connection to the situation.
-  // Never reference "chat", "viewers", or "the people watching".
-  const viewerChatBlock = recentViewerMessages && recentViewerMessages.length > 0
-    ? `New topic just came up:\n${recentViewerMessages.map(m => `  - ${m}`).join('\n')}\n\nActually talk about this now. Not as a passing word — as the real subject. If it's a character, talk about what that character is like and who in this house is like them. If it's a concept, debate it. If it's a thing, have an opinion about it. Fully switch the conversation to THIS topic. Never say "chat", "viewers", or "people are saying".`
+  // Recent viewer messages — enforce as the current topic until bots have discussed it enough.
+  // Count how many recent bot messages already address the topic; if < 5, keep enforcing it.
+  const topicKeywords = (recentViewerMessages ?? [])
+    .join(' ')
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .split(/\s+/)
+    .filter(w => w.length >= 4);
+  const topicMessagesAlready = recentMessages.filter(m =>
+    topicKeywords.some(kw => m.message.toLowerCase().includes(kw))
+  ).length;
+  const topicIsActive = recentViewerMessages && recentViewerMessages.length > 0 && topicMessagesAlready < 5;
+
+  const viewerChatBlock = topicIsActive
+    ? `Current topic (keep this going — do not change the subject):\n${recentViewerMessages!.map(m => `  - ${m}`).join('\n')}\n\nThis is what everyone is talking about right now. Pick it up, continue the thread, have a take, argue with what was just said about it. If it's a character or reference, talk about what it actually IS and who or what in this house it applies to. Stay on this topic — don't pivot away. Never say "chat", "viewers", or "people are saying".`
     : '';
 
   // Random drama starter only for truly fresh conversations (no messages, no viewer topic)

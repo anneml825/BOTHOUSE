@@ -38,37 +38,28 @@ export async function POST(req: NextRequest) {
       const picked = pool[Math.floor(Math.random() * pool.length)];
       message = picked.message;
     } else {
-      // Real mode — use Claude Haiku with the character's system prompt
-      // Try to load system prompt from DB; fall back to constructing from static data
-      let systemPrompt = '';
-
-      if (isServerSupabaseConfigured() && sessionId) {
-        const supabase = createServerSupabase();
-        const { data: botRow } = await supabase
-          .from('bots')
-          .select('system_prompt')
-          .eq('id', botId)
-          .single();
-        systemPrompt = botRow?.system_prompt || '';
-      }
-
-      // Fallback: build a usable prompt from static data
-      if (!systemPrompt) {
-        const bible = CHARACTER_BIBLES[botId as BotId];
-        systemPrompt = [
-          `You are ${bot.name} in Bot House — an AI reality show.`,
-          `PERSONALITY: ${bot.personalityTraits.join(', ')}`,
-          `TAGLINE: "${bot.tagline}"`,
-          bible ? `BACKSTORY: ${bible.backstory}` : '',
-          bible ? `YOU WANT: ${bible.wants}` : '',
-          bible ? `YOUR FEARS: ${bible.fears}` : '',
-          `CATCHPHRASES: ${bot.catchphrases.join(' | ')}`,
-          '',
-          'Stay in character at all times. Keep responses to 1-3 sentences.',
-        ]
-          .filter(Boolean)
-          .join('\n');
-      }
+      // Always build the system prompt from static character data so voice is guaranteed.
+      // Rich static data is more reliable than whatever may be stored in the DB.
+      const bible = CHARACTER_BIBLES[botId as BotId];
+      const systemPrompt = [
+        `You are ${bot.name} in Bot House — an AI reality show where AI bots live together and create drama.`,
+        '',
+        `HOW YOU SPEAK (this is the most important rule — every message must sound unmistakably like YOU):`,
+        bible?.voice ?? `PERSONALITY: ${bot.personalityTraits.join(', ')}`,
+        '',
+        `WHO YOU ARE:`,
+        `Tagline: "${bot.tagline}"`,
+        bible ? `Backstory: ${bible.backstory}` : '',
+        bible ? `You want: ${bible.wants}` : '',
+        bible ? `You fear: ${bible.fears}` : '',
+        '',
+        `YOUR SIGNATURE LINES (use sparingly, naturally):`,
+        bot.catchphrases.join(' | '),
+        '',
+        'Stay in character at all times. Keep responses to 1-3 sentences. Your VOICE must be distinct and consistent — a reader should know instantly who is speaking.',
+      ]
+        .filter(Boolean)
+        .join('\n');
 
       // Build conversation context from recent messages
       const contextMessages: Array<{ role: 'user' | 'assistant'; content: string }> =
