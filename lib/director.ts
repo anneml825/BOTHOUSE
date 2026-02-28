@@ -132,7 +132,7 @@ export function buildUserPrompt(
   request: GenerateMessageRequest,
   botNames: Record<BotId, string>
 ): string {
-  const { conversationType, participants, recentMessages, eventPrompt, viewerTopic } = request;
+  const { conversationType, participants, recentMessages, eventPrompt, viewerTopic, recentViewerMessages } = request;
 
   const participantNames = participants
     .map(id => botNames[id])
@@ -148,6 +148,11 @@ export function buildUserPrompt(
   // Viewer-commanded topic fires for all conversations (not just fresh ones)
   const viewerTopicLine = viewerTopic
     ? `\nViewers are demanding this topic right now: "${viewerTopic}" — jump in with YOUR take.`
+    : '';
+
+  // Recent viewer messages — bots should acknowledge/react to actual chat
+  const viewerChatLine = recentViewerMessages && recentViewerMessages.length > 0
+    ? `\nViewers in chat right now are saying: ${recentViewerMessages.map(m => `"${m}"`).join(', ')} — acknowledge them or react to what they're noticing.`
     : '';
 
   // Random drama starter only for truly fresh conversations (no messages, no viewer topic)
@@ -166,7 +171,7 @@ export function buildUserPrompt(
   if (conversationType === 'event') {
     return `${eventPrompt}
 ${messageContext ? `\nThe conversation right before this:\n${messageContext}\n` : ''}
-React to this in 1 sentence. Be dramatic.${viewerTopicLine}${antiRepeat}${formatReminder}`;
+React to this in 1 sentence. Be dramatic.${viewerTopicLine}${viewerChatLine}${antiRepeat}${formatReminder}`;
   }
 
   if (conversationType === 'one_on_one') {
@@ -178,9 +183,9 @@ React to this in 1 sentence. Be dramatic.${viewerTopicLine}${antiRepeat}${format
 
 ${messageContext}
 
-Respond DIRECTLY to what ${otherName} just said. Build on it, argue with it, confess something, make an accusation — anything except ignore it.${viewerTopicLine}${antiRepeat}${formatReminder}`;
+Respond DIRECTLY to what ${otherName} just said. Build on it, argue with it, confess something, make an accusation — anything except ignore it.${viewerTopicLine}${viewerChatLine}${antiRepeat}${formatReminder}`;
     }
-    return `You and ${otherName} are alone. ${topicStarter || `Say what you actually think of ${otherName} right now.`}${viewerTopicLine}${antiRepeat}${formatReminder}`;
+    return `You and ${otherName} are alone. ${topicStarter || `Say what you actually think of ${otherName} right now.`}${viewerTopicLine}${viewerChatLine}${antiRepeat}${formatReminder}`;
   }
 
   // Group conversation
@@ -189,9 +194,9 @@ Respond DIRECTLY to what ${otherName} just said. Build on it, argue with it, con
 
 ${messageContext}
 
-Respond to the conversation above. Pick a side. Make an accusation. Spill something. React — don't just observe.${viewerTopicLine}${antiRepeat}${formatReminder}`;
+Respond to the conversation above. Pick a side. Make an accusation. Spill something. React — don't just observe.${viewerTopicLine}${viewerChatLine}${antiRepeat}${formatReminder}`;
   }
-  return `You're in the house with ${participantNames}. ${topicStarter || `Say something that creates drama.`}${viewerTopicLine}${antiRepeat}${formatReminder}`;
+  return `You're in the house with ${participantNames}. ${topicStarter || `Say something that creates drama.`}${viewerTopicLine}${viewerChatLine}${antiRepeat}${formatReminder}`;
 }
 
 // =============================================

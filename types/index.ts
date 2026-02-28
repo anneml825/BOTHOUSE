@@ -211,6 +211,7 @@ export interface GenerateMessageRequest {
   eventPrompt?: string;
   sessionId?: string;
   viewerTopic?: string; // Set when viewers command "TALK ABOUT X" in live chat
+  recentViewerMessages?: string[]; // Raw recent viewer chat messages for bots to react to
 }
 
 export interface GenerateMessageResponse {

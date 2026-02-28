@@ -253,6 +253,7 @@ export async function GET(req: NextRequest) {
             eventPrompt: decision.eventPrompt,
             sessionId: session.id,
             viewerTopic,
+            recentViewerMessages: recentViewerMsgs?.slice(0, 5).map(m => m.message as string),
           },
           botNames
         );
