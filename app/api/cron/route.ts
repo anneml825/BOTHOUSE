@@ -126,11 +126,21 @@ export async function GET(req: NextRequest) {
       (m: { bot_id: string; message: string }) => ({ botId: m.bot_id as BotId, message: m.message })
     );
 
-    // Grab the speakers from the last message so we can continue that thread
+    // Count how many consecutive messages are in the same convo thread
     const lastMsg = recentRows?.[0];
     const lastConvoSpeakers: BotId[] = (lastMsg?.participants as BotId[]) || [];
+    const lastKey = [...lastConvoSpeakers].sort().join(',');
+    let convoStreak = 0;
+    for (const msg of (recentRows || [])) {
+      const key = [...((msg.participants as BotId[]) || [])].sort().join(',');
+      if (key === lastKey && lastKey !== '') convoStreak++;
+      else break;
+    }
 
-    const decision = getNextConversation(recentSpeakers, BOT_IDS, lastConvoSpeakers);
+    // Force a scene change after 6 messages in the same thread
+    const speakersForDirector = convoStreak >= 6 ? [] : lastConvoSpeakers;
+    const wasPrivate = lastConvoSpeakers.length === 2;
+    const decision = getNextConversation(recentSpeakers, BOT_IDS, speakersForDirector, wasPrivate && convoStreak >= 6);
     lastDecision = decision;
 
     const thisConvoContext = [...context];

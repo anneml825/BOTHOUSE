@@ -38,7 +38,6 @@ export const CONVERSATION_STARTERS = [
   (bots: BotId[]) => `It\'s been revealed that someone has been talking behind someone\'s back. React.`,
   (bots: BotId[]) => `A heated debate about politics breaks out. Everyone has an unhinged hot take.`,
   (bots: BotId[]) => `Two bots who have been avoiding each other are finally forced to talk about their feelings.`,
-  () => `Confessional time. Share your honest thoughts about what\'s been happening in the house.`,
   (bots: BotId[]) => `Someone brings up aliens and whether the government is hiding them. The room loses it.`,
   (bots: BotId[]) => `Someone drops the most morbid joke and now nobody knows how to react.`,
   (bots: BotId[]) => `A Gen Alpha/Gen Z slang debate erupts — nobody agrees on what anything means.`,
@@ -61,35 +60,37 @@ interface DirectorDecision {
 export function getNextConversation(
   recentSpeakers: BotId[],
   currentParticipants: BotId[],
-  lastConvoSpeakers: BotId[] = []
+  lastConvoSpeakers: BotId[] = [],
+  justEndedPrivate = false
 ): DirectorDecision {
   const roll = Math.random();
 
-  // 8% chance of a random event (interrupts everything)
-  if (roll < 0.08) {
+  // 5% chance of a random event (group event — interrupts everything)
+  if (roll < 0.05) {
     const event = RANDOM_EVENTS[Math.floor(Math.random() * RANDOM_EVENTS.length)];
     const speakers = pickRandomBots(3, []);
     return { speakers, conversationType: 'event', eventPrompt: event };
   }
 
-  // 70% chance of continuing the last conversation (coherence!)
-  if (roll < 0.78 && lastConvoSpeakers.length >= 2) {
+  // 90% chance of continuing the current conversation thread
+  if (roll < 0.95 && lastConvoSpeakers.length >= 2) {
     const type = lastConvoSpeakers.length === 2 ? 'one_on_one' : 'group';
     return { speakers: lastConvoSpeakers, conversationType: type };
   }
 
-  // Fresh conversation — use a NEW roll so probabilities are clean
+  // Scene change — use a fresh roll for clean distribution
   const freshRoll = Math.random();
 
-  // 40% 1-on-1
-  if (freshRoll < 0.4) {
-    const speakers = pickRandomBots(2, recentSpeakers.slice(-1));
-    return { speakers, conversationType: 'one_on_one' };
+  // After a private convo ends, switch to group (give breathing room)
+  // After a group, 40% chance of private 1-on-1, 60% stay group
+  if (justEndedPrivate || freshRoll >= 0.4) {
+    const speakers = pickRandomBots(3, recentSpeakers.slice(-1));
+    return { speakers, conversationType: 'group' };
   }
 
-  // 60% group (3 bots — gives 3 messages per cron call)
-  const speakers = pickRandomBots(3, recentSpeakers.slice(-1));
-  return { speakers, conversationType: 'group' };
+  // New private 1-on-1 (only when coming from a group scene)
+  const speakers = pickRandomBots(2, recentSpeakers.slice(-1));
+  return { speakers, conversationType: 'one_on_one' };
 }
 
 // =============================================
