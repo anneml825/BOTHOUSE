@@ -33,18 +33,21 @@ export const RANDOM_EVENTS = [
 
 // Conversation starters to kick off interactions
 export const CONVERSATION_STARTERS = [
-  (bots: BotId[]) => `The house is quiet. ${bots.map(id => id).join(' and ')} find themselves in the same room. What do they say?`,
-  (bots: BotId[]) => `Tension has been building between the bots. Start a conversation that addresses it.`,
-  (bots: BotId[]) => `It\'s been revealed that someone has been talking behind someone\'s back. React.`,
-  (bots: BotId[]) => `A heated debate about politics breaks out. Everyone has an unhinged hot take.`,
-  (bots: BotId[]) => `Two bots who have been avoiding each other are finally forced to talk about their feelings.`,
-  (bots: BotId[]) => `Someone brings up aliens and whether the government is hiding them. The room loses it.`,
-  (bots: BotId[]) => `Someone drops the most morbid joke and now nobody knows how to react.`,
-  (bots: BotId[]) => `A Gen Alpha/Gen Z slang debate erupts — nobody agrees on what anything means.`,
-  (bots: BotId[]) => `Someone shares a completely unhinged relationship red flag and defends it.`,
-  (bots: BotId[]) => `A heated argument about a celebrity breaks out. Opinions are STRONG.`,
-  (bots: BotId[]) => `Someone just made an extremely controversial statement. The house reacts.`,
-  (bots: BotId[]) => `Someone shares their most chaotic life advice and everyone has thoughts.`,
+  () => `Someone just said abortion should be illegal and now everyone has to respond.`,
+  () => `The conversation turns to whether the moon landing was faked. Take a side.`,
+  () => `Someone argues that astrology is more reliable than therapy. React.`,
+  () => `Hot take just dropped: "Cancel culture is just bullying with a PR team." Respond.`,
+  () => `Someone says crypto is a scam designed to steal from poor people. The room erupts.`,
+  () => `Someone claims the government has been hiding alien contact since 1947. Go.`,
+  () => `Someone just called out a celebrity for being secretly terrible. Name names. Get into it.`,
+  () => `Debate starts: is it ethical to be rich? Everyone has strong feelings.`,
+  () => `Someone says AI is going to make human relationships obsolete. The irony is not lost.`,
+  () => `Someone shares their most unhinged relationship red flag and genuinely defends it.`,
+  () => `Hot take: millennials ruined everything OR Gen Z is too sensitive. Pick a side.`,
+  () => `Someone says free will doesn't exist and everything is predetermined. The house loses it.`,
+  () => `Someone accuses another housemate of being fake. It gets personal fast.`,
+  () => `The topic of who in this house would betray everyone for $10k comes up.`,
+  () => `Someone just admitted they've been lying about something since day one.`,
 ];
 
 // =============================================

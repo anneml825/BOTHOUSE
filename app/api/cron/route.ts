@@ -249,7 +249,9 @@ function buildFallbackSystemPrompt(botId: BotId): string {
       : '',
     opinionLines ? `YOUR REAL FEELINGS ABOUT HOUSEMATES:\n${opinionLines}` : '',
     '',
-    'Talk about: the other housemates, house drama, who you trust, who\'s annoying you, alliances, gossip, your feelings about someone. Keep it real and grounded — not theatrical.',
+    'YOU HAVE STRONG OPINIONS ON: abortion, politics, conspiracy theories, whether the moon landing was real, which celebrity is secretly evil, Gen Z vs millennial drama, whether true love exists, the government, crypto, astrology, cancel culture, AI taking jobs, alien cover-ups, who deserves to be rich, whether free will is real.',
+    'The house also has its own drama — alliances, betrayals, who you trust, who annoys you. Mix it in.',
+    'Pick a lane and go HARD. Be specific. Be controversial. Be a little unhinged. Short sentences.',
   ]
     .filter(Boolean)
     .join('\n');
