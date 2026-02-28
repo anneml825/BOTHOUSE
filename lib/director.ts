@@ -150,9 +150,10 @@ export function buildUserPrompt(
     ? `\nViewers are demanding this topic right now: "${viewerTopic}" — jump in with YOUR take.`
     : '';
 
-  // Recent viewer messages — bots should acknowledge/react to actual chat
-  const viewerChatLine = recentViewerMessages && recentViewerMessages.length > 0
-    ? `\nViewers in chat right now are saying: ${recentViewerMessages.map(m => `"${m}"`).join(', ')} — acknowledge them or react to what they're noticing.`
+  // Recent viewer messages — when present, these DRIVE the conversation
+  // Build as a block that replaces the generic instruction so bots actually engage
+  const viewerChatBlock = recentViewerMessages && recentViewerMessages.length > 0
+    ? `The people watching right now are saying:\n${recentViewerMessages.map(m => `  - "${m}"`).join('\n')}\n\nAct on what they're saying. Pick a specific thing someone said and respond to it directly — have an actual opinion, bring up a personal example, drag someone into it. Do NOT just briefly mention it and move on.`
     : '';
 
   // Random drama starter only for truly fresh conversations (no messages, no viewer topic)
@@ -171,32 +172,42 @@ export function buildUserPrompt(
   if (conversationType === 'event') {
     return `${eventPrompt}
 ${messageContext ? `\nThe conversation right before this:\n${messageContext}\n` : ''}
-React to this in 1 sentence. Be dramatic.${viewerTopicLine}${viewerChatLine}${antiRepeat}${formatReminder}`;
+React to this in 1 sentence. Be dramatic.${viewerTopicLine}${antiRepeat}${formatReminder}`;
   }
 
   if (conversationType === 'one_on_one') {
     const otherBot = participants.find(id => id !== request.botId);
     const otherName = otherBot ? botNames[otherBot] : 'the other person';
 
+    if (viewerChatBlock) {
+      return `You and ${otherName} are alone together.${messageContext ? `\n\nRecent conversation:\n${messageContext}\n` : ''}
+
+${viewerChatBlock}${viewerTopicLine}${antiRepeat}${formatReminder}`;
+    }
     if (messageContext) {
       return `You and ${otherName} are alone together. Here's what was just said:
 
 ${messageContext}
 
-Respond DIRECTLY to what ${otherName} just said. Build on it, argue with it, confess something, make an accusation — anything except ignore it.${viewerTopicLine}${viewerChatLine}${antiRepeat}${formatReminder}`;
+Respond DIRECTLY to what ${otherName} just said. Build on it, argue with it, confess something, make an accusation — anything except ignore it.${viewerTopicLine}${antiRepeat}${formatReminder}`;
     }
-    return `You and ${otherName} are alone. ${topicStarter || `Say what you actually think of ${otherName} right now.`}${viewerTopicLine}${viewerChatLine}${antiRepeat}${formatReminder}`;
+    return `You and ${otherName} are alone. ${topicStarter || `Say what you actually think of ${otherName} right now.`}${viewerTopicLine}${antiRepeat}${formatReminder}`;
   }
 
   // Group conversation
+  if (viewerChatBlock) {
+    return `You're in the house with ${participantNames}.${messageContext ? `\n\nRecent conversation:\n${messageContext}\n` : ''}
+
+${viewerChatBlock}${viewerTopicLine}${antiRepeat}${formatReminder}`;
+  }
   if (messageContext) {
     return `You're in the house with ${participantNames}. Here's what's been said:
 
 ${messageContext}
 
-Respond to the conversation above. Pick a side. Make an accusation. Spill something. React — don't just observe.${viewerTopicLine}${viewerChatLine}${antiRepeat}${formatReminder}`;
+Respond to the conversation above. Pick a side. Make an accusation. Spill something. React — don't just observe.${viewerTopicLine}${antiRepeat}${formatReminder}`;
   }
-  return `You're in the house with ${participantNames}. ${topicStarter || `Say something that creates drama.`}${viewerTopicLine}${viewerChatLine}${antiRepeat}${formatReminder}`;
+  return `You're in the house with ${participantNames}. ${topicStarter || `Say something that creates drama.`}${viewerTopicLine}${antiRepeat}${formatReminder}`;
 }
 
 // =============================================
