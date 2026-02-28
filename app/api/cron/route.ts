@@ -96,25 +96,63 @@ export async function GET(req: NextRequest) {
     Object.entries(BOTS).map(([id, b]) => [id, b.name])
   ) as Record<BotId, string>;
 
-  // ---- Check for viewer "TALK ABOUT X" commands in live chat ----------
-  // If a viewer typed "TALK ABOUT potatoes" in the last 3 minutes,
-  // the bots will address that topic this round. Most recent command wins.
+  // ---- Detect viewer-driven topics from live chat ----------
+  // Two ways viewers can steer the bots:
+  //   1. Type "TALK ABOUT X" — the most popular X wins
+  //   2. Spam any word 3+ times across messages — gets picked up automatically
   let viewerTopic: string | undefined;
-  const threeMinutesAgo = new Date(Date.now() - 3 * 60 * 1000).toISOString();
+  const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+
+  // Fetch recent viewer messages — no session filter so messages saved before
+  // the sessionId fix (session_id = null) are also caught
   const { data: recentViewerMsgs } = await supabase
     .from('viewer_messages')
     .select('message')
-    .eq('session_id', session.id)
-    .gte('created_at', threeMinutesAgo)
+    .gte('created_at', fiveMinutesAgo)
     .order('created_at', { ascending: false })
-    .limit(30);
+    .limit(60);
 
-  if (recentViewerMsgs) {
+  if (recentViewerMsgs && recentViewerMsgs.length > 0) {
+    // 1. Count explicit "TALK ABOUT X" topics — most popular wins
+    const topicCounts: Record<string, number> = {};
     for (const vm of recentViewerMsgs) {
-      const match = (vm.message as string).match(/\bTALK\s+ABOUT\s+(.+)/i);
+      const match = (vm.message as string).match(/\bTALK\s+ABOUT\s+(.{2,80})/i);
       if (match) {
-        viewerTopic = match[1].trim().slice(0, 120);
-        break;
+        const topic = match[1].trim().toLowerCase();
+        topicCounts[topic] = (topicCounts[topic] || 0) + 1;
+      }
+    }
+
+    const topTopic = Object.entries(topicCounts).sort((a, b) => b[1] - a[1])[0];
+    if (topTopic) {
+      viewerTopic = topTopic[0];
+    }
+
+    // 2. If no explicit commands, detect any word/phrase spammed 3+ times
+    if (!viewerTopic) {
+      const stopWords = new Set([
+        'the', 'and', 'for', 'are', 'but', 'not', 'you', 'all', 'can',
+        'her', 'was', 'one', 'our', 'out', 'had', 'day', 'get', 'has',
+        'him', 'his', 'how', 'its', 'did', 'now', 'yes', 'lol', 'omg',
+        'like', 'that', 'this', 'with', 'they', 'have', 'from', 'were',
+        'will', 'your', 'been', 'what', 'just', 'also', 'more', 'when',
+      ]);
+      const wordCounts: Record<string, number> = {};
+      for (const vm of recentViewerMsgs) {
+        const words = (vm.message as string)
+          .toLowerCase()
+          .replace(/[^a-z0-9\s]/g, ' ')
+          .split(/\s+/)
+          .filter(w => w.length >= 4 && !stopWords.has(w));
+        for (const word of words) {
+          wordCounts[word] = (wordCounts[word] || 0) + 1;
+        }
+      }
+      const spammedWord = Object.entries(wordCounts)
+        .filter(([, count]) => count >= 3)
+        .sort((a, b) => b[1] - a[1])[0];
+      if (spammedWord) {
+        viewerTopic = spammedWord[0];
       }
     }
   }
