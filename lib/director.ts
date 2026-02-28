@@ -164,24 +164,34 @@ export function buildUserPrompt(
   const formatReminder = `\nSpoken words ONLY. No asterisks. No stage directions.`;
 
   if (conversationType === 'event') {
-    return `Something just happened in the house: ${eventPrompt}
-${messageContext ? `\nWhat was just being said:\n${messageContext}\n` : ''}
-Say your reaction out loud in 1 sentence.${viewerTopicLine}${antiRepeat}${formatReminder}`;
+    return `${eventPrompt}
+${messageContext ? `\nThe conversation right before this:\n${messageContext}\n` : ''}
+React to this in 1 sentence. Be dramatic.${viewerTopicLine}${antiRepeat}${formatReminder}`;
   }
 
   if (conversationType === 'one_on_one') {
     const otherBot = participants.find(id => id !== request.botId);
     const otherName = otherBot ? botNames[otherBot] : 'the other person';
 
-    return `You and ${otherName} are alone in the house.
-${messageContext ? `\n${messageContext}\n` : `\n${topicStarter || `Say what you actually think about ${otherName}.`}\n`}
-Respond in 1-2 sentences.${viewerTopicLine}${antiRepeat}${formatReminder}`;
+    if (messageContext) {
+      return `You and ${otherName} are alone together. Here's what was just said:
+
+${messageContext}
+
+Respond DIRECTLY to what ${otherName} just said. Build on it, argue with it, confess something, make an accusation — anything except ignore it.${viewerTopicLine}${antiRepeat}${formatReminder}`;
+    }
+    return `You and ${otherName} are alone. ${topicStarter || `Say what you actually think of ${otherName} right now.`}${viewerTopicLine}${antiRepeat}${formatReminder}`;
   }
 
   // Group conversation
-  return `You're in the house with ${participantNames}.
-${messageContext ? `\n${messageContext}\n` : `\n${topicStarter || `Say something real.`}\n`}
-Respond in 1-2 sentences.${viewerTopicLine}${antiRepeat}${formatReminder}`;
+  if (messageContext) {
+    return `You're in the house with ${participantNames}. Here's what's been said:
+
+${messageContext}
+
+Respond to the conversation above. Pick a side. Make an accusation. Spill something. React — don't just observe.${viewerTopicLine}${antiRepeat}${formatReminder}`;
+  }
+  return `You're in the house with ${participantNames}. ${topicStarter || `Say something that creates drama.`}${viewerTopicLine}${antiRepeat}${formatReminder}`;
 }
 
 // =============================================
