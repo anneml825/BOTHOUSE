@@ -11,6 +11,7 @@ import GlitchText from '@/components/ui/GlitchText';
 import { getNextSessionTime } from '@/components/ui/timeUtils';
 import Link from 'next/link';
 import { getAllBots } from '@/lib/bots';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
 // =============================================
 // MAIN PAGE - Bot House Live View
@@ -20,8 +21,8 @@ import { getAllBots } from '@/lib/bots';
 const IS_DEMO = process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
 
 export default function HomePage() {
-  const [chaosLevel, setChaosLevel] = useState(42);
-  const [viewerCount, setViewerCount] = useState(1337);
+  const [chaosLevel, setChaosLevel] = useState(0);
+  const [viewerCount, setViewerCount] = useState(0);
   const [isLive, setIsLive] = useState(IS_DEMO ? true : false);
   const [sessionId, setSessionId] = useState<string | undefined>(undefined);
 
@@ -45,27 +46,48 @@ export default function HomePage() {
     return () => clearInterval(interval);
   }, []);
 
-  // Slowly drift chaos level for demo effect
+  // Real viewer count via Supabase Realtime Presence
   useEffect(() => {
-    const interval = setInterval(() => {
-      setChaosLevel(prev => {
-        const drift = (Math.random() - 0.48) * 4;
-        return Math.max(10, Math.min(95, prev + drift));
-      });
-    }, 3000);
-    return () => clearInterval(interval);
+    if (!isSupabaseConfigured()) return;
+    const channel = supabase.channel('live-viewers');
+    channel.on('presence', { event: 'sync' }, () => {
+      setViewerCount(Object.keys(channel.presenceState()).length);
+    });
+    channel.subscribe(async (status) => {
+      if (status === 'SUBSCRIBED') {
+        await channel.track({ joined_at: Date.now() });
+      }
+    });
+    return () => {
+      channel.untrack();
+      supabase.removeChannel(channel);
+    };
   }, []);
 
-  // Fake viewer count drift for demo
+  // Real chaos level from drama_score averages in the active session
   useEffect(() => {
-    const interval = setInterval(() => {
-      setViewerCount(prev => {
-        const drift = Math.floor((Math.random() - 0.45) * 20);
-        return Math.max(500, Math.min(9999, prev + drift));
-      });
-    }, 5000);
-    return () => clearInterval(interval);
-  }, []);
+    if (!isSupabaseConfigured() || !sessionId) return;
+
+    const fetchChaos = async () => {
+      const { data } = await supabase
+        .from('bot_messages')
+        .select('drama_score')
+        .eq('session_id', sessionId)
+        .order('created_at', { ascending: false })
+        .limit(20);
+      if (data && data.length > 0) {
+        const avg = data.reduce((sum, m) => sum + (m.drama_score ?? 0), 0) / data.length;
+        setChaosLevel(Math.round(avg * 10)); // drama_score 0-10 → chaos 0-100
+      }
+    };
+
+    fetchChaos();
+    const sub = supabase
+      .channel('chaos-tracker')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'bot_messages', filter: `session_id=eq.${sessionId}` }, fetchChaos)
+      .subscribe();
+    return () => { supabase.removeChannel(sub); };
+  }, [sessionId]);
 
   const allBots = getAllBots();
 

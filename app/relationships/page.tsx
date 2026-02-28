@@ -1,8 +1,12 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import Header from '@/components/layout/Header';
 import GlitchText from '@/components/ui/GlitchText';
 import { BOTS, CHARACTER_BIBLES, DRAMA_SEEDS } from '@/lib/bots';
 import { BotId } from '@/types';
 import Link from 'next/link';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
 // =============================================
 // RELATIONSHIPS / DRAMA MAP PAGE
@@ -74,6 +78,54 @@ const counts = KNOWN_RELATIONSHIPS.reduce(
 );
 
 export default function RelationshipsPage() {
+  // Per-bot average drama_score from real messages (0-10 scale)
+  const [botScores, setBotScores] = useState<Record<string, number>>({});
+  const [hasLiveData, setHasLiveData] = useState(false);
+
+  useEffect(() => {
+    if (!isSupabaseConfigured()) return;
+    const fetchScores = async () => {
+      // Use most recent session (active or last completed)
+      const { data: session } = await supabase
+        .from('live_sessions')
+        .select('id')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+      if (!session) return;
+
+      const { data: msgs } = await supabase
+        .from('bot_messages')
+        .select('bot_id, drama_score')
+        .eq('session_id', session.id);
+      if (!msgs || msgs.length === 0) return;
+
+      const sums: Record<string, { total: number; count: number }> = {};
+      msgs.forEach(m => {
+        if (!sums[m.bot_id]) sums[m.bot_id] = { total: 0, count: 0 };
+        sums[m.bot_id].total += m.drama_score ?? 0;
+        sums[m.bot_id].count += 1;
+      });
+      const scores: Record<string, number> = {};
+      Object.entries(sums).forEach(([id, { total, count }]) => {
+        scores[id] = total / count;
+      });
+      setBotScores(scores);
+      setHasLiveData(true);
+    };
+    fetchScores();
+  }, []);
+
+  // Compute live intensity for a relationship pair (1-10)
+  const liveIntensity = (rel: { from: BotId; to: BotId; intensity: number }) => {
+    if (!hasLiveData || (botScores[rel.from] === undefined && botScores[rel.to] === undefined)) {
+      return rel.intensity;
+    }
+    const a = botScores[rel.from] ?? rel.intensity;
+    const b = botScores[rel.to] ?? rel.intensity;
+    return Math.min(10, Math.max(1, Math.round((a + b) / 2)));
+  };
+
   return (
     <div className="min-h-screen bg-[#080810] grid-bg">
       <Header />
@@ -86,6 +138,12 @@ export default function RelationshipsPage() {
             The full web of Bot House relationships — situationships, beefs, alliances, and the
             romantic tension nobody will acknowledge.
           </p>
+          {hasLiveData && (
+            <div className="inline-flex items-center gap-1.5 mt-3 px-3 py-1 rounded-full bg-[#00ff88]/10 border border-[#00ff88]/30 text-[#00ff88] font-mono text-xs">
+              <span className="live-dot" />
+              INTENSITIES BASED ON REAL CONVERSATIONS
+            </div>
+          )}
         </div>
 
         {/* Legend */}
@@ -137,7 +195,11 @@ export default function RelationshipsPage() {
                       {seed.type}
                     </span>
                     <span className="text-[#5a5a78] font-mono text-xs">
-                      ⚡ {seed.intensity}/10
+                      ⚡ {hasLiveData
+                        ? Math.min(10, Math.max(1, Math.round(
+                            seed.bots.reduce((sum, bid) => sum + (botScores[bid] ?? seed.intensity), 0) / seed.bots.length
+                          )))
+                        : seed.intensity}/10
                     </span>
                   </div>
                   <p className="text-[#e8e8f0] text-sm leading-relaxed mb-3">{seed.setup}</p>
@@ -214,14 +276,14 @@ export default function RelationshipsPage() {
                       <span>{cfg.emoji}</span>
                       <span>{cfg.label}</span>
                     </div>
-                    {/* Intensity dots */}
-                    <div className="flex gap-0.5">
+                    {/* Intensity dots — driven by real drama_scores when available */}
+                    <div className="flex gap-0.5" title={hasLiveData ? 'Live intensity from real conversations' : 'Story intensity'}>
                       {Array.from({ length: 10 }).map((_, idx) => (
                         <div
                           key={idx}
                           className="w-1 h-1 rounded-full"
                           style={{
-                            background: idx < rel.intensity ? cfg.color : '#1e1e35',
+                            background: idx < liveIntensity(rel) ? cfg.color : '#1e1e35',
                           }}
                         />
                       ))}

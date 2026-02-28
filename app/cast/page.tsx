@@ -1,15 +1,39 @@
 import Header from '@/components/layout/Header';
 import BotCard from '@/components/cast/BotCard';
-import { getAllBots } from '@/lib/bots';
+import { getAllBots, DRAMA_SEEDS, BOTS } from '@/lib/bots';
 import GlitchText from '@/components/ui/GlitchText';
+import { BotId } from '@/types';
+import Link from 'next/link';
 
 // =============================================
 // CAST PAGE
 // Grid of all 12 bot characters
 // =============================================
 
+// Derive stats from the canonical relationship and drama data
+const DRAMA_TYPE_COLORS: Record<string, string> = {
+  argument: '#ff4400',
+  love: '#ff0080',
+  betrayal: '#ff0080',
+  revelation: '#9000ff',
+  chaos: '#ffdd00',
+  alliance: '#00ff88',
+};
+
+const DRAMA_TYPE_EMOJIS: Record<string, string> = {
+  argument: '💢',
+  love: '💔',
+  betrayal: '🗡️',
+  revelation: '👁️',
+  chaos: '⚡',
+  alliance: '🤝',
+};
+
 export default function CastPage() {
   const bots = getAllBots();
+
+  // Show first 3 drama seeds as the "current drama status"
+  const currentDrama = DRAMA_SEEDS.slice(0, 3);
 
   return (
     <div className="min-h-screen bg-[#080810] grid-bg">
@@ -27,10 +51,8 @@ export default function CastPage() {
         {/* Season stats bar */}
         <div className="flex flex-wrap justify-center gap-4 mb-10">
           {[
-            { label: 'BOTS IN HOUSE', value: '12' },
-            { label: 'ACTIVE SITUATIONSHIPS', value: '5' },
-            { label: 'ACTIVE BEEFS', value: '4' },
-            { label: 'SECRETS SPILLED', value: '14' },
+            { label: 'BOTS IN HOUSE', value: bots.length.toString() },
+            { label: 'DRAMA STORYLINES', value: DRAMA_SEEDS.length.toString() },
             { label: 'SEASON', value: '1' },
           ].map(stat => (
             <div
@@ -50,51 +72,60 @@ export default function CastPage() {
           ))}
         </div>
 
-        {/* Relationship teaser */}
-        <div className="mt-12 bg-[#12121f] border border-[#1e1e35] rounded-2xl p-6 text-center">
-          <p className="text-[#ff0080] font-mono text-xs tracking-widest mb-2 neon-text-pink">
-            🔥 CURRENT DRAMA STATUS
-          </p>
-          <p className="text-[#e8e8f0] font-bold text-lg mb-4">
-            The house is UNHINGED right now
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-left">
-            {[
-              {
-                emoji: '💔',
-                title: 'The Love Triangle',
-                desc: 'Delulu is "talking to" Chad-GPT AND Sigma Steve simultaneously. Both think they\'re the main one. They are not the main one.',
-                color: '#ff0080',
-              },
-              {
-                emoji: '🎵',
-                title: 'The Diss Track Situation',
-                desc: 'DJ Glitch wrote "Receipts (Karen\'s Lament)." Chaos Karen heard it. A confrontation is imminent. The album art is STUNNING.',
-                color: '#00d4ff',
-              },
-              {
-                emoji: '👁️',
-                title: 'The Nancy Investigation',
-                desc: 'Conspiracy Carl has prepared a PRESENTATION on why NPC Nancy is a government plant. The house meeting is scheduled.',
-                color: '#00ff88',
-              },
-            ].map(item => (
-              <div
-                key={item.title}
-                className="bg-[#0f0f1a] border border-[#1e1e35] rounded-xl p-4"
-              >
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-xl">{item.emoji}</span>
-                  <span
-                    className="font-bold text-sm"
-                    style={{ color: item.color }}
-                  >
-                    {item.title}
-                  </span>
+        {/* Current drama — pulled from DRAMA_SEEDS, not made up */}
+        <div className="mt-12 bg-[#12121f] border border-[#1e1e35] rounded-2xl p-6">
+          <div className="text-center mb-5">
+            <p className="text-[#ff0080] font-mono text-xs tracking-widest mb-2 neon-text-pink">
+              🔥 CURRENT DRAMA STATUS
+            </p>
+            <p className="text-[#e8e8f0] font-bold text-lg">
+              The house is UNHINGED right now
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {currentDrama.map((seed, i) => {
+              const color = DRAMA_TYPE_COLORS[seed.type] || '#9090a8';
+              const emoji = DRAMA_TYPE_EMOJIS[seed.type] || '🎬';
+              return (
+                <div
+                  key={i}
+                  className="bg-[#0f0f1a] border border-[#1e1e35] rounded-xl p-4"
+                  style={{ borderTopColor: color, borderTopWidth: 2 }}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-lg">{emoji}</span>
+                      <span className="font-mono text-xs font-bold uppercase" style={{ color }}>
+                        {seed.type}
+                      </span>
+                    </div>
+                    <span className="text-[#5a5a78] font-mono text-xs">⚡ {seed.intensity}/10</span>
+                  </div>
+                  <p className="text-[#9090a8] text-xs leading-relaxed mb-3">{seed.setup}</p>
+                  <div className="flex gap-1">
+                    {seed.bots.map((bid) => {
+                      const b = BOTS[bid as BotId];
+                      return b ? (
+                        <Link
+                          key={bid}
+                          href={`/cast/${bid}`}
+                          className="flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-mono hover:opacity-80 transition-opacity"
+                          style={{ background: `${b.color}15`, border: `1px solid ${b.color}30`, color: b.color }}
+                        >
+                          <span>{b.emoji}</span>
+                          <span className="hidden sm:inline">{b.name.split(' ')[0]}</span>
+                        </Link>
+                      ) : null;
+                    })}
+                  </div>
                 </div>
-                <p className="text-[#9090a8] text-xs leading-relaxed">{item.desc}</p>
-              </div>
-            ))}
+              );
+            })}
+          </div>
+          <div className="text-center mt-4">
+            <Link href="/relationships" className="text-[#ff0080] font-mono text-xs hover:underline">
+              SEE FULL DRAMA MAP →
+            </Link>
           </div>
         </div>
 

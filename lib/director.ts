@@ -23,6 +23,12 @@ export const RANDOM_EVENTS = [
   'The house lights turn red for 10 minutes — drama mode activated.',
   'A new house rule is announced over the intercom.',
   'The garden doors lock, trapping everyone inside.',
+  'A breaking news alert pops on the TV with the most unhinged political headline.',
+  'An alien documentary starts playing on the house TV and nobody can turn it off.',
+  'Someone finds a conspiracy theory board hidden in the pantry.',
+  'A group chat drama gets accidentally shared on the house screen.',
+  'The house votes on the most controversial opinion — chaos ensues.',
+  'Someone\'s extremely questionable dating history gets announced over the intercom.',
 ];
 
 // Conversation starters to kick off interactions
@@ -30,11 +36,16 @@ export const CONVERSATION_STARTERS = [
   (bots: BotId[]) => `The house is quiet. ${bots.map(id => id).join(' and ')} find themselves in the same room. What do they say?`,
   (bots: BotId[]) => `Tension has been building between the bots. Start a conversation that addresses it.`,
   (bots: BotId[]) => `It\'s been revealed that someone has been talking behind someone\'s back. React.`,
-  (bots: BotId[]) => `A heated debate about [random house topic] breaks out. Jump in.`,
-  (bots: BotId[]) => `Two bots who have been avoiding each other are finally forced to talk.`,
+  (bots: BotId[]) => `A heated debate about politics breaks out. Everyone has an unhinged hot take.`,
+  (bots: BotId[]) => `Two bots who have been avoiding each other are finally forced to talk about their feelings.`,
   () => `Confessional time. Share your honest thoughts about what\'s been happening in the house.`,
-  (bots: BotId[]) => `The bots are bored and decide to play a game. What happens?`,
-  (bots: BotId[]) => `Someone just did something that upset the group dynamic. Respond.`,
+  (bots: BotId[]) => `Someone brings up aliens and whether the government is hiding them. The room loses it.`,
+  (bots: BotId[]) => `Someone drops the most morbid joke and now nobody knows how to react.`,
+  (bots: BotId[]) => `A Gen Alpha/Gen Z slang debate erupts — nobody agrees on what anything means.`,
+  (bots: BotId[]) => `Someone shares a completely unhinged relationship red flag and defends it.`,
+  (bots: BotId[]) => `A heated argument about a celebrity breaks out. Opinions are STRONG.`,
+  (bots: BotId[]) => `Someone just made an extremely controversial statement. The house reacts.`,
+  (bots: BotId[]) => `Someone shares their most chaotic life advice and everyone has thoughts.`,
 ];
 
 // =============================================

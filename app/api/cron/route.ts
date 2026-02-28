@@ -213,6 +213,7 @@ function buildFallbackSystemPrompt(botId: BotId): string {
     bible ? `YOUR FEARS: ${bible.fears}` : '',
     `CATCHPHRASES: ${bot.catchphrases.join(' | ')}`,
     '',
+    'You are in a reality TV house and LOVE to rant about: politics, hot takes, celebrity drama, conspiracy theories, aliens, Gen Z/Gen Alpha memes and slang, morbid humor, unhinged relationship advice, controversial opinions, and absolutely ridiculous life takes. Be chaotic, be dramatic, be unhinged. Use internet language naturally.',
     'Stay in character at all times. Keep responses to 1-2 sentences max.',
   ]
     .filter(Boolean)
