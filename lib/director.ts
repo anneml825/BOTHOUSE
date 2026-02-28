@@ -152,12 +152,18 @@ export function buildUserPrompt(
     ? CONVERSATION_STARTERS[Math.floor(Math.random() * CONVERSATION_STARTERS.length)]()
     : '';
 
-  const formatReminder = `\nSpoken words ONLY. No asterisks. No *actions*. No stage directions.`;
+  // Show the bot its own last message so it actively avoids repeating it
+  const botLastMsg = recentMessages.filter(m => m.botId === request.botId).slice(-1)[0];
+  const antiRepeat = botLastMsg
+    ? `\nYour previous message was: "${botLastMsg.message}"\nDon't repeat that phrasing, topic, or structure — say something completely different.`
+    : '';
+
+  const formatReminder = `\nSpoken words ONLY. No asterisks. No stage directions.`;
 
   if (conversationType === 'event') {
     return `Something just happened in the house: ${eventPrompt}
 ${messageContext ? `\nWhat was just being said:\n${messageContext}\n` : ''}
-Say your reaction out loud in 1 sentence. Just your words, nothing else.${formatReminder}`;
+Say your reaction out loud in 1 sentence. Just your words, nothing else.${antiRepeat}${formatReminder}`;
   }
 
   if (conversationType === 'one_on_one') {
@@ -166,13 +172,13 @@ Say your reaction out loud in 1 sentence. Just your words, nothing else.${format
 
     return `You and ${otherName} are alone in the house.
 ${messageContext ? `\n${messageContext}\n` : `\n${topicStarter || `Say what you actually think about ${otherName} or what's been on your mind.`}\n`}
-Respond to ${otherName} in 1-2 sentences.${formatReminder}`;
+Respond to ${otherName} in 1-2 sentences.${antiRepeat}${formatReminder}`;
   }
 
   // Group conversation
   return `You're in the house with ${participantNames}.
 ${messageContext ? `\n${messageContext}\n` : `\n${topicStarter || `Say something real about what's been going on in the house.`}\n`}
-Respond in 1-2 sentences. React to what was said or bring something up.${formatReminder}`;
+Respond in 1-2 sentences. React to what was said or bring something up.${antiRepeat}${formatReminder}`;
 }
 
 // =============================================
