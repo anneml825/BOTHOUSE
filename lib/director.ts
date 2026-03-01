@@ -165,7 +165,7 @@ export function buildUserPrompt(
   const topicMessagesAlready = topicKeywords.length > 0
     ? recentMessages.filter(m => topicKeywords.some(kw => m.message.toLowerCase().includes(kw))).length
     : 0;
-  const topicIsActive = !!viewerTopic && topicMessagesAlready < 5;
+  const topicIsActive = !!viewerTopic && topicMessagesAlready < 10;
 
   const viewerChatBlock = topicIsActive
     ? `Someone just asked: "${viewerTopic}" — bring it into this room. React to it as YOUR character. Who does this make you think of right now? Don't analyze it. Don't make the same point as whoever just spoke. React to THEM, go somewhere they didn't. Never say "chat", "viewers", or "people are saying".`
