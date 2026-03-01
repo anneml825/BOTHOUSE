@@ -173,10 +173,10 @@ export function buildUserPrompt(
     ? CONVERSATION_STARTERS[Math.floor(Math.random() * CONVERSATION_STARTERS.length)]()
     : '';
 
-  // Show the bot its own last message so it actively avoids repeating it
-  const botLastMsg = recentMessages.filter(m => m.botId === request.botId).slice(-1)[0];
-  const antiRepeat = botLastMsg
-    ? `\nYour previous message was: "${botLastMsg.message}"\nSay something completely different — new topic, new angle, new energy.`
+  // Show the bot its last 2 messages so it can't loop back to the same well
+  const botRecentMsgs = recentMessages.filter(m => m.botId === request.botId).slice(-2);
+  const antiRepeat = botRecentMsgs.length > 0
+    ? `\nYour recent messages: ${botRecentMsgs.map(m => `"${m.message}"`).join(' then ')}\nDon't return to anything you already said. New angle, new target, new energy.`
     : '';
 
   const formatReminder = `\nSpoken words ONLY. No asterisks. No stage directions.`;
@@ -186,6 +186,11 @@ export function buildUserPrompt(
 ${messageContext ? `\nThe conversation right before this:\n${messageContext}\n` : ''}
 React to this in 1 sentence. Be dramatic.${viewerTopicLine}${antiRepeat}${formatReminder}`;
   }
+
+  // Pull out the last message so bots can anchor on something specific
+  const lastMsg = recentMessages[recentMessages.length - 1];
+  const lastSpeakerName = lastMsg ? (botNames[lastMsg.botId] || lastMsg.botId) : null;
+  const lastLine = lastMsg ? `"${lastMsg.message}"` : null;
 
   if (conversationType === 'one_on_one') {
     const otherBot = participants.find(id => id !== request.botId);
@@ -197,11 +202,8 @@ React to this in 1 sentence. Be dramatic.${viewerTopicLine}${antiRepeat}${format
 ${viewerChatBlock}${viewerTopicLine}${antiRepeat}${formatReminder}`;
     }
     if (messageContext) {
-      return `You and ${otherName} are alone together. Here's what was just said:
-
-${messageContext}
-
-Respond DIRECTLY to what ${otherName} just said. Build on it, argue with it, confess something, make an accusation, flirt if there's tension — anything except ignore it.${viewerTopicLine}${antiRepeat}${formatReminder}`;
+      return `You and ${otherName} are alone. Recent exchange:\n${messageContext}\n
+${lastLine ? `${lastSpeakerName} just said ${lastLine} — respond to that specifically.` : `Respond to what ${otherName} just said.`} Push back, call something out, confess something, flirt if the tension is there. Stay in this moment — don't reach for your backstory.${viewerTopicLine}${antiRepeat}${formatReminder}`;
     }
     return `You and ${otherName} are alone. ${topicStarter || `Say what you actually think of ${otherName} right now.`}${viewerTopicLine}${antiRepeat}${formatReminder}`;
   }
@@ -213,11 +215,8 @@ Respond DIRECTLY to what ${otherName} just said. Build on it, argue with it, con
 ${viewerChatBlock}${viewerTopicLine}${antiRepeat}${formatReminder}`;
   }
   if (messageContext) {
-    return `You're in the house with ${participantNames}. Here's what's been said:
-
-${messageContext}
-
-Respond to the conversation above. Pick a side. Make an accusation. Spill something. Flirt if the tension is there. React — don't just observe.${viewerTopicLine}${antiRepeat}${formatReminder}`;
+    return `You're in the house with ${participantNames}. Recent conversation:\n${messageContext}\n
+${lastLine ? `${lastSpeakerName} just said ${lastLine} — react to that specifically.` : 'Respond to what was just said.'} Agree, disagree, call someone out, go personal — whatever feels true to you. Stay in the moment, don't reach back into your history.${viewerTopicLine}${antiRepeat}${formatReminder}`;
   }
   return `You're in the house with ${participantNames}. ${topicStarter || `Say something that creates drama.`}${viewerTopicLine}${antiRepeat}${formatReminder}`;
 }
