@@ -211,7 +211,7 @@ ${viewerChatBlock} Don't explain what it means — feel something about it.${vie
   }
   if (messageContext) {
     return `You're in the house with ${participantNames}. Recent conversation:\n${messageContext}\n
-${lastLine ? `${lastSpeakerName} just said ${lastLine}. Talk TO ${lastSpeakerName} — use their name, react to what they specifically said. Don't announce your own thing. Don't add to a list. Respond to THEM.` : 'Someone just said something. Talk to them directly.'} Be reactive — hurt, smug, defensive, curious. You're in a conversation, not taking turns with a microphone.${viewerTopicLine}${antiRepeat}${formatReminder}`;
+${lastLine ? `${lastSpeakerName} just said: ${lastLine}\n\nDo NOT repeat or quote what they said. Do NOT say "${lastSpeakerName} said X and I feel Y." Just react. Address ${lastSpeakerName} directly — use their name, say what it does to you, say what you want from them. You're in the room with them right now.` : 'Someone just said something. Address them directly — no recapping, just react.'} Be reactive — hurt, smug, turned on, defensive, furious. You're in the scene, not describing it.${viewerTopicLine}${antiRepeat}${formatReminder}`;
   }
   return `You're in the house with ${participantNames}. ${topicStarter || `Say something honest about someone in this room. Not clever — honest.`}${viewerTopicLine}${antiRepeat}${formatReminder}`;
 }
