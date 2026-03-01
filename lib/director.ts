@@ -82,9 +82,9 @@ export function getNextConversation(
     return { speakers, conversationType: 'event', eventPrompt: event };
   }
 
-  // 65% chance of continuing the current conversation thread (was 90%)
-  // Lower value = more scene changes = all 12 bots get more airtime
-  if (roll < 0.65 && lastConvoSpeakers.length >= 2) {
+  // 85% chance of continuing the current conversation thread.
+  // Scenes need time to develop — a fight takes 4-6 minutes, not 1.
+  if (roll < 0.85 && lastConvoSpeakers.length >= 2) {
     const type = lastConvoSpeakers.length === 2 ? 'one_on_one' : 'group';
     return { speakers: lastConvoSpeakers, conversationType: type };
   }

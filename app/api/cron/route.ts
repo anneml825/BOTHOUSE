@@ -264,11 +264,13 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // ---- Run conversation rounds ----------------------------------------
-  // Each cron call = ONE active scene with 2-3 bots, 2 rounds max.
-  // Bots are locked per cron call so the same people go back-and-forth.
-  // Events get exactly 1 round (3 bots react to the event, then done).
-  // Next cron picks up from there — either continues or a new scene starts.
+  // ---- ONE round per cron call ----------------------------------------
+  // Each cron = 2-3 messages from ONE scene. Cron fires every minute, so
+  // a scene with 3 bots produces 3 messages/min. Streak threshold is 12,
+  // so a scene lasts ~4 minutes before a forced change. Continuation rate
+  // is 85%, so most scene changes don't happen until the streak forces it.
+  // This means scenes breathe — a fight can develop over 4-6 minutes
+  // instead of getting cut after one cron call.
   const TIME_BUDGET_MS = 50000;
   const startTime = Date.now();
   const allGenerated: Array<{ botId: BotId; dramaScore: number }> = [];
@@ -276,13 +278,10 @@ export async function GET(req: NextRequest) {
     conversationType: 'casual',
     speakers: [],
   };
-  let lockedSpeakers: BotId[] | null = null; // same bots for all rounds in this cron call
-  let firstRoundWasEvent = false;
 
-  for (let round = 0; round < 2; round++) {
+  // Single round — no loop needed, but keeping structure for retry logic
+  for (let round = 0; round < 1; round++) {
     if (Date.now() - startTime > TIME_BUDGET_MS) break;
-    // Events get exactly 1 round — don't pile more bots on
-    if (round > 0 && firstRoundWasEvent) break;
 
     // Fresh context every round so bots react to what was just said
     const { data: recentRows } = await supabase
@@ -312,34 +311,22 @@ export async function GET(req: NextRequest) {
       else break;
     }
 
-    let decision: { conversationType: import('@/types').ConversationType; speakers: BotId[]; eventPrompt?: string };
+    // Director picks the scene. Forced scene change after 12 messages (was 6)
+    // so scenes have time to breathe — a fight can develop over 4+ minutes.
+    const lastWasEvent = (lastMsg as { conversation_type?: string } | undefined)?.conversation_type === 'event';
+    const speakersForDirector = (convoStreak >= 12 || lastWasEvent) ? [] : lastConvoSpeakers;
+    const wasPrivate = lastConvoSpeakers.length === 2;
+    let decision: { conversationType: import('@/types').ConversationType; speakers: BotId[]; eventPrompt?: string } =
+      getNextConversation(recentSpeakers, BOT_IDS, speakersForDirector, wasPrivate && convoStreak >= 12);
 
-    if (round === 0) {
-      // Round 0: Director picks the scene normally
-      const lastWasEvent = (lastMsg as { conversation_type?: string } | undefined)?.conversation_type === 'event';
-      const speakersForDirector = (convoStreak >= 6 || lastWasEvent) ? [] : lastConvoSpeakers;
-      const wasPrivate = lastConvoSpeakers.length === 2;
-      decision = getNextConversation(recentSpeakers, BOT_IDS, speakersForDirector, wasPrivate && convoStreak >= 6);
-
-      // Override with the forced house event if one just fired
-      if (forcedEvent) {
-        decision = {
-          conversationType: 'event',
-          speakers: forcedEvent.bots.slice(0, 3) as BotId[],
-          eventPrompt: forcedEvent.setup,
-        };
-        forcedEvent = null;
-        firstRoundWasEvent = true;
-      }
-
-      // Lock these speakers for the rest of this cron call
-      lockedSpeakers = decision.speakers;
-    } else {
-      // Round 1: same bots continue the same scene — true back-and-forth
+    // Override with the forced house event if one just fired
+    if (forcedEvent) {
       decision = {
-        conversationType: (lockedSpeakers!.length === 2 ? 'one_on_one' : 'group') as 'one_on_one' | 'group',
-        speakers: lockedSpeakers!,
+        conversationType: 'event',
+        speakers: forcedEvent.bots.slice(0, 3) as BotId[],
+        eventPrompt: forcedEvent.setup,
       };
+      forcedEvent = null;
     }
 
     lastDecision = decision;
