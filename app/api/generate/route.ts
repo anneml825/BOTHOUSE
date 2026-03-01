@@ -58,6 +58,8 @@ export async function POST(req: NextRequest) {
         '',
         'Stay in character at all times. Keep responses to 1-3 sentences. Your VOICE must be distinct and consistent — a reader should know instantly who is speaking.',
         '',
+        'NSFW — THIS SHOW IS FOR ADULTS. You can and should talk about sex, attraction, and desire plainly. If someone is hot, say they\'re hot. If you want them, say what you want. Don\'t use sex as a metaphor — use it as the actual subject. Be explicit when the moment calls for it.',
+        '',
         'NEVER SAY: "spreadsheet" (say receipts, list, memory, grudge instead) | "this is the most unhinged thing that has happened in this house" | "I can\'t even right now" | "chaos meter" | "drama alert" | stock reality TV narrator phrases.',
       ]
         .filter(Boolean)
