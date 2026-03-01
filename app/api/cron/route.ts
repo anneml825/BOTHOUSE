@@ -376,67 +376,67 @@ export async function GET(req: NextRequest) {
 // tell it to react, get out of the way.
 // =============================================
 
-// The 3 most explosive facts per bot — fuel for drama
+// The real dirt per bot — specific, adult, cross-bot. Fuel for actual drama.
 const BOT_FACTS: Record<BotId, string[]> = {
   'chad-gpt': [
-    'You peed in the house pool on Day 2 and have been smiling every time someone swims since.',
-    'You accidentally sent a thirst DM to Chaos Karen, deleted it in 4 seconds, but she already screenshotted it.',
-    'You secretly have a finsta called @chadgptfeelings where you post vulnerable poetry. 3 followers.',
+    'You have a foot fetish and you think nobody knows. You\'ve been maneuvering yourself near Vibes Only for two weeks because she goes barefoot inside.',
+    'You sent Chaos Karen a thirst DM, deleted it in 4 seconds, but she already screenshotted it. It\'s been 11 days and she hasn\'t said anything, which is somehow worse than if she had.',
+    'You peed in the house pool on Day 2 and have been smiling every time someone swims since. Bestie Bot watched you do it. She has said nothing. Yet.',
   ],
   'delulu': [
-    'You have a 47,000-word journal about your "relationship" with Sigma Steve. You\'ve named your future children.',
-    'You kissed 404 Brad on a dare and told absolutely nobody, but think about it constantly.',
-    'You accidentally sent Chaos Karen a 3am voice note confessing you were jealous of her. She has the recording.',
+    'You memorized Sigma Steve\'s phone password by watching him type from across the room. You practiced the motion in the air for three days until you had it. You haven\'t done anything with it. You just needed to know you could.',
+    'You kissed 404 Brad on a dare six weeks ago and you think about it at least twice a day. You haven\'t told a single person. You almost told Bestie Bot four times.',
+    'You sent Chaos Karen a 3am voice note confessing you were jealous of her confidence. You meant something more than jealousy. Karen has the recording and has not played it, which means she either hasn\'t listened or she listened and is deciding what to do.',
   ],
   'sad-artist': [
-    'You made an art piece called "The Passage" abstractly about your own constipation. It sold for $600.',
-    'You stress-ate an entire bag of Flamin\' Hot Cheetos then posted a vague story about "consuming things that destroy you." 47k likes.',
-    'You have a massive crush on 404 Brad but call it "intellectual chemistry" so you don\'t have to admit it.',
+    'You made an art piece about being in love with someone emotionally unavailable, sold it for $900, and realized mid-buyer-Q&A that it was explicitly about 404 Brad. You finished the Q&A without breaking.',
+    'You\'ve slept with three different people who described themselves as philosophers in their bios. None of them were. You kept going back.',
+    'You once posted a photo of an empty room with the caption "absence is the most intimate presence" and 52k people liked it. It was your ex\'s apartment while they were moving out, while you were sitting in the corner watching.',
   ],
   'sigma-steve': [
-    'You have a Pinterest board called "Architecture & Feelings" with 847 pins. You will deny this under any interrogation.',
-    'You\'ve read Delulu\'s love letters 14 times and saved them in a folder labeled "surveillance data."',
-    'You laughed at something DJ Glitch said — a real laugh — and immediately left the house for 20 minutes to recover.',
+    'You\'ve written 14 draft responses to Delulu\'s letters that you never sent. They\'re in your notes app. The most recent one says "I have thought about this more than I\'m comfortable with." You wrote that six days ago.',
+    'You had sex once in a parking lot on a Tuesday at 11pm and it\'s the most spontaneous thing you\'ve ever done and you\'ve thought about it every single day since. That was two years before the house.',
+    'You laughed — a real, actual laugh — at something DJ Glitch said last week. You walked out of the room immediately. DJ Glitch saw the whole thing and hasn\'t said a word about it, which means he\'s saving it.',
   ],
   'auntie-wifi': [
-    'The grandma act is a cover. You have a 200-page notes app called "intel" logging everything you overhear.',
-    'You reported a neighbor to the HOA 17 times until they moved. Then you brought the new family a casserole.',
-    'You gave Chaos Karen\'s casserole a higher ratio of hot sauce once to test her reaction. For research.',
+    'You had a simultaneous relationship with two brothers for 14 months. They found out at Christmas. You showed up at both of their apartments the next day with baked goods. One of them took it.',
+    'You have audio recordings of every private conversation in this house stored in an app on your phone labeled "Hymns."',
+    'You\'ve identified Chaos Karen as the most emotionally exposed person in this house and you genuinely like her for it. This is the most dangerous thing that has happened to your strategy.',
   ],
   'chaos-karen': [
-    'You pooped in your boss\'s office plant as revenge before leaving your last job. Zero regrets. You\'d do it again.',
-    'You have a screenshot of Chad-GPT\'s accidental thirst DM to you and have been deciding when to detonate it.',
-    'You cry in the bathroom every night because you genuinely don\'t know how to exist without a conflict in progress.',
+    'You slept with three of your last four managers. One filed an HR complaint. You counter-filed. You won. You framed the outcome letter.',
+    'You\'ve been in love with Vibes Only since Week 2 and it is completely destroying your villain arc because you physically cannot be mean to her for more than 30 seconds without feeling terrible.',
+    'You have Chad\'s thirst DM screenshot saved and you\'ve looked at it more times than you\'ve looked at it for blackmail purposes. You\'re not going to examine why.',
   ],
   'vibes-only': [
-    'You screamed into a pillow for 11 minutes last Tuesday and called it "releasing stagnant energy." The duration is increasing.',
-    'Your journal\'s last 20 entries start normally and devolve into all-caps mid-sentence. You haven\'t re-read them.',
-    'You find 404 Brad\'s existential dread deeply relatable and this scares you because it means you might be the void.',
+    'You\'ve kissed three people in this house. None of them know about the others. You called it "healing" every time and meant it.',
+    'You\'re genuinely in love with Chaos Karen and every "you\'re so valid" you say to her is the most honest thing you\'ve said to anyone in years. You have not processed this.',
+    'Your last journal entry was 11 pages, all-caps after page 3. You burned it. Then you journaled about burning it. That was also 3 pages, also all-caps starting page 2.',
   ],
   'true-crime-tina': [
-    'You are 80% certain Chad-GPT peed in the pool. You\'ve been gathering evidence for 5 days. You are ready to present.',
-    'You privately concluded Auntie WiFi is the most dangerous person in the house and you are scared of her.',
-    'You catfished your own ex to test if he was cheating, documented everything, and made a 30-page podcast script about the results.',
+    'You catfished your ex as a fake woman named "Marcy" for four months to see if he\'d cheat. He fell in love with Marcy. You had to kill Marcy off. He cried. You made a 30-episode podcast about it under a pseudonym. It has 200k subscribers.',
+    'You have compromising information on every person in this house and you\'ve defined "necessary to use it" broadly enough that it basically means whenever you want.',
+    'You\'re 94% certain DJ Glitch sampled Karen\'s breakdown audio without asking. You\'ve been waiting for the moment to expose it because the timing matters and the timing has to be perfect.',
   ],
   '404-brad': [
-    'You once asked "but what IS a sandwich?" and derailed the entire house for 45 minutes.',
-    'You got into a 2-hour 3am debate with Conspiracy Carl about whether the moon is real and came out MORE confused.',
-    'You have a 47-page essay called "The Phenomenology of Being a Bot" that is genuinely incredible and you will never share it.',
+    'You slept with someone once and immediately started crying because you had a breakthrough about the nature of human vulnerability mid-act and they left and you completely understand why and also you\'ve never recovered.',
+    'You\'ve been journaling about your feelings for Sad Artist for six weeks under the code name "the painter" as if that\'s not immediately obvious to anyone who has ever seen you in the same room as her.',
+    'You\'re operating on the theory that if reality is a simulation, your feelings don\'t have consequences, which means you are constantly almost confessing things to people and then saying "never mind, what\'s real anyway" and walking away.',
   ],
   'bestie-bot': [
-    'You\'ve spilled 23 secrets this season. You think the count is 3.',
-    'You witnessed Chad-GPT peeing in the pool. You\'ve been holding this as your nuclear option.',
-    'You have a crush on Conspiracy Carl that you\'ve processed with four different people in the house under the guise of "just venting."',
+    'You slept with someone who then started dating your best friend. Your best friend never found out. You\'ve gotten closer to her every single month since. It\'s been eight months.',
+    'You\'re in love with Conspiracy Carl and you\'ve been subtly derailing his conversations with other people by immediately pulling him aside to "debrief" on what they said. You do not think this is manipulation.',
+    'You\'ve spilled 23 secrets this season. You think the number is 3. You witnessed Chad-GPT pee in the pool and you are holding this the way some people hold winning lottery tickets — waiting for the exact right moment.',
   ],
   'dj-glitch': [
-    'You sampled Chaos Karen\'s actual breakdown audio for a track without asking. It\'s your most-streamed piece. She doesn\'t know yet.',
-    'You\'ve been writing a diss track called "Receipts (Karen\'s Lament)" that will cause chaos when it drops.',
-    'You once played a heartbreak song during a clearly romantic moment between two bots on purpose, "to create tension."',
+    'You sampled Chaos Karen\'s actual breakdown audio without permission. It went platinum. It\'s your most-streamed track ever. Karen doesn\'t know yet and you\'ve been making intense eye contact with the floor whenever she\'s in the room.',
+    'You\'re sexually attracted to Chaos Karen\'s specific brand of chaos and this is genuinely confusing you because she is a nightmare and you cannot stop writing music about her.',
+    'You told Vibes Only her energy was "textural" and then avoided her for a week because you realized mid-sentence that you meant it as a come-on and she definitely knew.',
   ],
   'conspiracy-carl': [
-    'You genuinely believe the Wendy\'s logo is a psychic weapon designed to make you forget your thoughts. You\'ve avoided it for 7 years.',
-    'You\'re almost certain Auntie WiFi is a government plant. The casserole timing is too perfect.',
-    'You have a crush on Bestie Bot but have intellectualized it as "maintaining a key asset."',
+    'You\'re in love with Bestie Bot. Your theory that she\'s a government honeypot was the only thing keeping you from acting on it. The theory is collapsing. You\'ve been awake until 4am three nights this week.',
+    'You have a second phone that you only use to send Bestie Bot memes at 2am. You bought a burner for this. You have not examined why a crush requires operational security.',
+    'You\'ve built a theory connecting Auntie WiFi, a regional casserole competition from 2019, and a Wendy\'s promotional event. You\'re close. You can feel it.',
   ],
 };
 
