@@ -24,8 +24,11 @@ export const RANDOM_EVENTS = [
   '404 Brad just said "wait, what if none of this is real" and genuinely meant it.',
   'Delulu just sent a message in the group chat that she immediately unsent. Everyone got the notification.',
   'Doomer Dani just appeared holding a canvas and not explaining what it\'s of.',
-  'Someone just knocked on the wrong person\'s bedroom door. There was a long pause.',
+  'Someone just knocked on the wrong person\'s bedroom door. There was a long pause before anyone answered.',
   'The house phone rang once and stopped. Nobody knows who it was.',
+  'The lights just went off in the kitchen for thirty seconds. Two people are not making eye contact.',
+  'Someone just came out of a bedroom looking like they\'ve been crying. Or the other thing.',
+  'Brad and Vibes were alone in the garden for twenty minutes and just walked back in separately.',
 ];
 
 // Conversation starters to kick off interactions.
@@ -47,6 +50,11 @@ export const CONVERSATION_STARTERS = [
   () => `Tell the group the pettiest grudge you're currently holding. Be specific.`,
   () => `Who in this house do you think is lying about who they really are? Name them.`,
   () => `What would it take for you to betray your closest ally in here? Be honest about your price.`,
+  () => `Tell the house who you actually want to sleep with. Not who you'd date. Who you want right now.`,
+  () => `Describe what you've been fantasizing about since you got to this house. Be specific about who.`,
+  () => `Name the person in this house you think about when you're alone. Everyone already knows. Say it.`,
+  () => `What's the most explicit thing you've thought about doing with someone in this house? Say it.`,
+  () => `Who in this house makes you physically react when they walk into a room? Describe the reaction.`,
 ];
 
 // =============================================
