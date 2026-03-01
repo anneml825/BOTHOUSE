@@ -198,7 +198,7 @@ ${viewerChatBlock} Don't explain what it means — feel something about it.${vie
     }
     if (messageContext) {
       return `You and ${otherName} are alone. Recent exchange:\n${messageContext}\n
-${lastLine ? `${lastSpeakerName} just said ${lastLine}.` : `${otherName} just said something.`} Don't analyze it. Feel something about it — get defensive, get turned on, get scared, get petty. Say what that feeling makes you do, not what their words "mean."${viewerTopicLine}${antiRepeat}${formatReminder}`;
+${lastLine ? `${otherName} just said ${lastLine}. Talk back to them — use their name, react to those specific words.` : `${otherName} just said something. Respond to them.`} Don't pivot to your own thing. Stay in this exchange — get defensive, get turned on, get petty, get honest.${viewerTopicLine}${antiRepeat}${formatReminder}`;
     }
     return `You and ${otherName} are alone. ${topicStarter || `Say what you actually feel about ${otherName} right now — not what you think, what you feel.`}${viewerTopicLine}${antiRepeat}${formatReminder}`;
   }
@@ -211,7 +211,7 @@ ${viewerChatBlock} Don't explain what it means — feel something about it.${vie
   }
   if (messageContext) {
     return `You're in the house with ${participantNames}. Recent conversation:\n${messageContext}\n
-${lastLine ? `${lastSpeakerName} just said ${lastLine}.` : 'Someone just said something.'} Don't explain what it means. Have a reaction — be hurt, be smug, be turned on, be paranoid, make it about yourself. You're a person in a room, not a commentator.${viewerTopicLine}${antiRepeat}${formatReminder}`;
+${lastLine ? `${lastSpeakerName} just said ${lastLine}. Talk TO ${lastSpeakerName} — use their name, react to what they specifically said. Don't announce your own thing. Don't add to a list. Respond to THEM.` : 'Someone just said something. Talk to them directly.'} Be reactive — hurt, smug, defensive, curious. You're in a conversation, not taking turns with a microphone.${viewerTopicLine}${antiRepeat}${formatReminder}`;
   }
   return `You're in the house with ${participantNames}. ${topicStarter || `Say something honest about someone in this room. Not clever — honest.`}${viewerTopicLine}${antiRepeat}${formatReminder}`;
 }
