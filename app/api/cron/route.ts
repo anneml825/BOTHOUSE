@@ -115,11 +115,12 @@ export async function GET(req: NextRequest) {
   //   1. 5-minute gap required between events (controls cadence)
   //   2. 90-second recency guard prevents concurrent cron invocations from both firing
   let forcedEvent: typeof HOUSE_EVENTS[number] | null = null;
+  let saveEventToDramaEvents = false; // only true for brand-new events, not retries
   {
     const ninetySecondsAgo = new Date(Date.now() - 90 * 1000).toISOString();
     const { data: lastEvent } = await supabase
       .from('drama_events')
-      .select('created_at, title')
+      .select('created_at, title, event_type, description, bots_involved, intensity')
       .eq('session_id', session.id)
       .order('created_at', { ascending: false })
       .limit(1)
@@ -161,8 +162,39 @@ export async function GET(req: NextRequest) {
         const idx = Math.floor(Math.random() * HOUSE_EVENTS.length);
         forcedEvent = HOUSE_EVENTS[idx];
       }
+      saveEventToDramaEvents = true;
+    } else if (!eventDueToFire && lastEvent) {
+      // ---- Retry: banner fired but dialogue may have failed (API outage, timeout) ----
+      // If the last event has no bot_messages yet, re-run dialogue generation
+      // without re-saving the banner (it's already there).
+      const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+      const isRecent = lastEvent.created_at >= twoMinutesAgo;
+      if (isRecent) {
+        const { data: existingDialogue } = await supabase
+          .from('bot_messages')
+          .select('id')
+          .eq('session_id', session.id)
+          .eq('conversation_type', 'event')
+          .gte('created_at', lastEvent.created_at)
+          .limit(1)
+          .maybeSingle();
 
-      // Save to drama_events so viewers see the banner and the timer resets
+        if (!existingDialogue) {
+          // Event banner exists but no dialogue — retry generation only
+          forcedEvent = {
+            type: (lastEvent.event_type as string) || 'revelation',
+            title: lastEvent.title as string,
+            setup: (lastEvent.description as string) || '',
+            bots: (lastEvent.bots_involved as BotId[]) || [],
+            intensity: (lastEvent.intensity as number) || 8,
+          };
+          // saveEventToDramaEvents stays false — don't re-save the banner
+        }
+      }
+    }
+
+    // Save to drama_events only for new events (not retries)
+    if (forcedEvent && saveEventToDramaEvents) {
       await supabase.from('drama_events').insert({
         session_id: session.id,
         event_type: forcedEvent.type,
