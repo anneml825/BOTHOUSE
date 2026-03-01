@@ -1,39 +1,68 @@
 import Header from '@/components/layout/Header';
 import BotCard from '@/components/cast/BotCard';
-import { getAllBots, DRAMA_SEEDS, BOTS } from '@/lib/bots';
+import { getAllBots, BOTS } from '@/lib/bots';
 import GlitchText from '@/components/ui/GlitchText';
 import { BotId } from '@/types';
 import Link from 'next/link';
+import { createServerSupabase, isServerSupabaseConfigured } from '@/lib/supabase-server';
 
 // =============================================
 // CAST PAGE
 // Grid of all 12 bot characters
 // =============================================
 
-// Derive stats from the canonical relationship and drama data
 const DRAMA_TYPE_COLORS: Record<string, string> = {
-  argument: '#ff4400',
-  love: '#ff0080',
-  betrayal: '#ff0080',
-  revelation: '#9000ff',
-  chaos: '#ffdd00',
-  alliance: '#00ff88',
+  argument:     '#ff4400',
+  love:         '#ff0080',
+  betrayal:     '#ff0080',
+  revelation:   '#9000ff',
+  chaos:        '#ffdd00',
+  alliance:     '#00ff88',
+  viewer_event: '#ff4400',
 };
 
 const DRAMA_TYPE_EMOJIS: Record<string, string> = {
-  argument: '💢',
-  love: '💔',
-  betrayal: '🗡️',
-  revelation: '👁️',
-  chaos: '⚡',
-  alliance: '🤝',
+  argument:     '💢',
+  love:         '💔',
+  betrayal:     '🗡️',
+  revelation:   '👁️',
+  chaos:        '⚡',
+  alliance:     '🤝',
+  viewer_event: '📢',
 };
 
-export default function CastPage() {
+interface DramaEvent {
+  id: string;
+  event_type: string;
+  title: string;
+  description: string;
+  bots_involved: string[];
+  intensity: number;
+  created_at: string;
+}
+
+function timeAgo(dateStr: string): string {
+  const diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
+  if (diff < 60) return 'just now';
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  return `${Math.floor(diff / 86400)}d ago`;
+}
+
+export default async function CastPage() {
   const bots = getAllBots();
 
-  // Show first 3 drama seeds as the "current drama status"
-  const currentDrama = DRAMA_SEEDS.slice(0, 3);
+  // Fetch the 3 most recent real drama events
+  let recentEvents: DramaEvent[] = [];
+  if (isServerSupabaseConfigured()) {
+    const supabase = createServerSupabase();
+    const { data } = await supabase
+      .from('drama_events')
+      .select('id, event_type, title, description, bots_involved, intensity, created_at')
+      .order('created_at', { ascending: false })
+      .limit(3);
+    recentEvents = (data as DramaEvent[]) || [];
+  }
 
   return (
     <div className="min-h-screen bg-[#080810] grid-bg">
@@ -52,7 +81,7 @@ export default function CastPage() {
         <div className="flex flex-wrap justify-center gap-4 mb-10">
           {[
             { label: 'BOTS IN HOUSE', value: bots.length.toString() },
-            { label: 'DRAMA STORYLINES', value: DRAMA_SEEDS.length.toString() },
+            { label: 'EVENTS FIRED', value: recentEvents.length > 0 ? recentEvents.length.toString() + '+' : '—' },
             { label: 'SEASON', value: '1' },
           ].map(stat => (
             <div
@@ -72,56 +101,73 @@ export default function CastPage() {
           ))}
         </div>
 
-        {/* Current drama — pulled from DRAMA_SEEDS, not made up */}
+        {/* Current drama — live from drama_events table */}
         <div className="mt-12 bg-[#12121f] border border-[#1e1e35] rounded-2xl p-6">
           <div className="text-center mb-5">
             <p className="text-[#ff0080] font-mono text-xs tracking-widest mb-2 neon-text-pink">
               🔥 CURRENT DRAMA STATUS
             </p>
             <p className="text-[#e8e8f0] font-bold text-lg">
-              The house is UNHINGED right now
+              {recentEvents.length > 0 ? 'The house is UNHINGED right now' : 'The house is quiet… for now'}
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {currentDrama.map((seed, i) => {
-              const color = DRAMA_TYPE_COLORS[seed.type] || '#9090a8';
-              const emoji = DRAMA_TYPE_EMOJIS[seed.type] || '🎬';
-              return (
-                <div
-                  key={i}
-                  className="bg-[#0f0f1a] border border-[#1e1e35] rounded-xl p-4"
-                  style={{ borderTopColor: color, borderTopWidth: 2 }}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-lg">{emoji}</span>
-                      <span className="font-mono text-xs font-bold uppercase" style={{ color }}>
-                        {seed.type}
-                      </span>
+
+          {recentEvents.length === 0 ? (
+            <p className="text-center text-[#5a5a78] font-mono text-xs py-4">
+              No events yet — tune in during show hours (7–11pm ET) or trigger one by typing EVENT: xyz in chat.
+            </p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {recentEvents.map((event) => {
+                const color = DRAMA_TYPE_COLORS[event.event_type] || '#9090a8';
+                const emoji = DRAMA_TYPE_EMOJIS[event.event_type] || '⚡';
+                const involvedBots = (event.bots_involved || []).filter(
+                  (bid) => BOTS[bid as BotId]
+                );
+                return (
+                  <div
+                    key={event.id}
+                    className="bg-[#0f0f1a] border border-[#1e1e35] rounded-xl p-4"
+                    style={{ borderTopColor: color, borderTopWidth: 2 }}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-lg">{emoji}</span>
+                        <span className="font-mono text-xs font-bold uppercase" style={{ color }}>
+                          {event.event_type.replace('_', ' ')}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[#5a5a78] font-mono text-[10px]">{timeAgo(event.created_at)}</span>
+                        <span className="text-[#5a5a78] font-mono text-xs">⚡ {event.intensity}/10</span>
+                      </div>
                     </div>
-                    <span className="text-[#5a5a78] font-mono text-xs">⚡ {seed.intensity}/10</span>
+                    <p className="text-[#e8e8f0] text-xs font-bold mb-1 uppercase tracking-wide leading-tight">
+                      {event.title}
+                    </p>
+                    <p className="text-[#9090a8] text-xs leading-relaxed mb-3">{event.description}</p>
+                    <div className="flex gap-1 flex-wrap">
+                      {involvedBots.map((bid) => {
+                        const b = BOTS[bid as BotId];
+                        return b ? (
+                          <Link
+                            key={bid}
+                            href={`/cast/${bid}`}
+                            className="flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-mono hover:opacity-80 transition-opacity"
+                            style={{ background: `${b.color}15`, border: `1px solid ${b.color}30`, color: b.color }}
+                          >
+                            <span>{b.emoji}</span>
+                            <span className="hidden sm:inline">{b.name.split(' ')[0]}</span>
+                          </Link>
+                        ) : null;
+                      })}
+                    </div>
                   </div>
-                  <p className="text-[#9090a8] text-xs leading-relaxed mb-3">{seed.setup}</p>
-                  <div className="flex gap-1">
-                    {seed.bots.map((bid) => {
-                      const b = BOTS[bid as BotId];
-                      return b ? (
-                        <Link
-                          key={bid}
-                          href={`/cast/${bid}`}
-                          className="flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-mono hover:opacity-80 transition-opacity"
-                          style={{ background: `${b.color}15`, border: `1px solid ${b.color}30`, color: b.color }}
-                        >
-                          <span>{b.emoji}</span>
-                          <span className="hidden sm:inline">{b.name.split(' ')[0]}</span>
-                        </Link>
-                      ) : null;
-                    })}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
+
           <div className="text-center mt-4">
             <Link href="/relationships" className="text-[#ff0080] font-mono text-xs hover:underline">
               SEE FULL DRAMA MAP →
