@@ -6,29 +6,26 @@ import { BOT_IDS } from './bots';
 // Orchestrates who talks to whom, when, and why
 // =============================================
 
-// Random events that shake things up mid-session
+// Mid-conversation derails — personal, specific, character-driven interruptions.
+// These fire at ~12% chance to break circular threads. NOT environmental fluff.
+// Each one should redirect attention to a specific person or situation.
 export const RANDOM_EVENTS = [
-  'The lights suddenly flicker and go out for 30 seconds.',
-  'A mysterious note slides under the door. It reads: "Not everything is as it seems."',
-  'The house speakers blast an extremely loud noise for 3 seconds, startling everyone.',
-  'A notification pops up on the house TV: "Someone has been chosen for a secret task."',
-  'The house temperature suddenly drops 10 degrees.',
-  'A camera drone flies through the living room.',
-  'The house WiFi goes out for exactly 60 seconds.',
-  'A "twist" announcement: One bot must nominate another bot to share their deepest secret.',
-  'The house alarm goes off for no apparent reason.',
-  'A pizza is delivered to the house with no explanation.',
-  'The confession booth light turns on, inviting one bot to share a secret.',
-  'Someone\'s phone (metaphorically) buzzes with a message from outside the house.',
-  'The house lights turn red for 10 minutes — drama mode activated.',
-  'A new house rule is announced over the intercom.',
-  'The garden doors lock, trapping everyone inside.',
-  'A breaking news alert pops on the TV with the most unhinged political headline.',
-  'An alien documentary starts playing on the house TV and nobody can turn it off.',
-  'Someone finds a conspiracy theory board hidden in the pantry.',
-  'A group chat drama gets accidentally shared on the house screen.',
-  'The house votes on the most controversial opinion — chaos ensues.',
-  'Someone\'s extremely questionable dating history gets announced over the intercom.',
+  'Someone just walked back in from outside and clearly heard the last part of this conversation. Say one thing in reaction.',
+  'Auntie WiFi just walked into the room carrying a casserole and making eye contact with exactly the wrong person at exactly the wrong moment.',
+  'Someone\'s phone just lit up with a notification and they flipped it face-down immediately. Everyone saw.',
+  'Chad-GPT just walked out of the room mid-sentence without explaining himself.',
+  'Vibes Only just said "I\'m fine" and immediately looked at the floor.',
+  'Bestie Bot just whispered something to the person next to her and then said "never mind, forget it."',
+  'Sigma Steve just appeared in the doorway, said nothing, and left.',
+  'Chaos Karen just opened her notes app, typed something, and smiled at no one in particular.',
+  'DJ Glitch just started recording something on his phone. Nobody asked why.',
+  'True Crime Tina just wrote something on her suspect board. The pen was loud.',
+  'Conspiracy Carl just connected two new pieces of red string on his board and said "oh no."',
+  '404 Brad just said "wait, what if none of this is real" and genuinely meant it.',
+  'Delulu just sent a message in the group chat that she immediately unsent. Everyone got the notification.',
+  'Doomer Dani just appeared holding a canvas and not explaining what it\'s of.',
+  'Someone just knocked on the wrong person\'s bedroom door. There was a long pause.',
+  'The house phone rang once and stopped. Nobody knows who it was.',
 ];
 
 // Conversation starters to kick off interactions.
@@ -70,8 +67,8 @@ export function getNextConversation(
 ): DirectorDecision {
   const roll = Math.random();
 
-  // 5% chance of a random event (group event — interrupts everything)
-  if (roll < 0.05) {
+  // 12% chance of a mid-conversation derail — personal moment that breaks the circular thread
+  if (roll < 0.12) {
     const event = RANDOM_EVENTS[Math.floor(Math.random() * RANDOM_EVENTS.length)];
     const speakers = pickRandomBots(3, []);
     return { speakers, conversationType: 'event', eventPrompt: event };

@@ -244,7 +244,7 @@ export async function GET(req: NextRequest) {
     // Fresh context every round so bots react to what was just said
     const { data: recentRows } = await supabase
       .from('bot_messages')
-      .select('bot_id, message, created_at, participants')
+      .select('bot_id, message, created_at, participants, conversation_type')
       .eq('session_id', session.id)
       .order('created_at', { ascending: false })
       .limit(12);
@@ -269,8 +269,10 @@ export async function GET(req: NextRequest) {
       else break;
     }
 
-    // Force a scene change after 6 messages in the same thread
-    const speakersForDirector = convoStreak >= 6 ? [] : lastConvoSpeakers;
+    // Force a scene change after 6 messages in the same thread, OR after an event
+    // Events are hard breaks — don't let the same bots continue the event thread
+    const lastWasEvent = (lastMsg as { conversation_type?: string } | undefined)?.conversation_type === 'event';
+    const speakersForDirector = (convoStreak >= 6 || lastWasEvent) ? [] : lastConvoSpeakers;
     const wasPrivate = lastConvoSpeakers.length === 2;
     let decision = getNextConversation(recentSpeakers, BOT_IDS, speakersForDirector, wasPrivate && convoStreak >= 6);
 
