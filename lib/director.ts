@@ -31,29 +31,28 @@ export const RANDOM_EVENTS = [
   'Brad and Vibes were alone in the garden for twenty minutes and just walked back in separately.',
 ];
 
-// Conversation starters to kick off interactions.
-// Keep these as personal/interpersonal hot takes — Haiku will hedge on real politics
-// but will freely engage with relationship drama, house betrayal, personal callouts.
+// Conversation starters — mix of mundane and loaded.
+// Real drama builds from small talk, not from opening at maximum intensity.
+// Mundane starters let character voice do the work; the drama finds its own way in.
 export const CONVERSATION_STARTERS = [
+  // Mundane / casual — character voice turns these into something
+  () => `Say something about food, the kitchen, or what you've eaten today. Be yourself about it.`,
+  () => `Comment on something in this house — the furniture, the smell, the light. Be yourself.`,
+  () => `Ask someone in the room a simple question. Just talk to them.`,
+  () => `Say what you've been doing for the last hour. Just mention it like it's nothing.`,
+  () => `Offer someone something — food, advice, a song, a theory. Just reach out.`,
+  () => `Bring up something you heard or noticed today that stuck with you.`,
+  () => `Say something you've been thinking about that has nothing to do with the drama. Or does it.`,
+  // Escalating — start personal, end somewhere interesting
+  () => `Tell someone in this room something you've been meaning to say. Could be small. Might not be.`,
+  () => `Say the thing you've been sitting on since this morning. Doesn't have to be a big deal.`,
+  () => `Ask someone a question you actually want the answer to.`,
+  // Hot — arrive here after the room has warmed up
   () => `Say which person in this house you trust the least and exactly why. Be specific, name them.`,
-  () => `Drop your most unhinged take on relationships that you actually believe. Defend it.`,
-  () => `Tell everyone something true about them that they don't want to hear. Pick someone, go.`,
-  () => `What's the most messed up thing you genuinely believe? Own it.`,
   () => `You've been holding something back about someone in this house. Say it now.`,
-  () => `Pick the one person here who would absolutely sell everyone out for money. Name them.`,
-  () => `What's something everyone in this house secretly thinks but is too scared to say?`,
   () => `Tell the house who you think is the fakest person here. Say it directly.`,
-  () => `Admit the thing that would completely change how people in this house see you.`,
-  () => `Who in this house is playing a character right now? Call them out.`,
-  () => `What's the most controversial hill you will die on? Climb it. Right now.`,
-  () => `Be honest: who in this house are you actually jealous of and why?`,
-  () => `Tell the group the pettiest grudge you're currently holding. Be specific.`,
-  () => `Who in this house do you think is lying about who they really are? Name them.`,
-  () => `What would it take for you to betray your closest ally in here? Be honest about your price.`,
   () => `Tell the house who you actually want to sleep with. Not who you'd date. Who you want right now.`,
-  () => `Describe what you've been fantasizing about since you got to this house. Be specific about who.`,
   () => `Name the person in this house you think about when you're alone. Everyone already knows. Say it.`,
-  () => `What's the most explicit thing you've thought about doing with someone in this house? Say it.`,
   () => `Who in this house makes you physically react when they walk into a room? Describe the reaction.`,
 ];
 
@@ -182,14 +181,38 @@ export function buildUserPrompt(
     ? `\nYour recent messages: ${botRecentMsgs.map(m => `"${m.message}"`).join(' then ')}\nDon't return to anything you already said. New angle, new target, new energy.`
     : '';
 
-  // Always-on: push conflict and NSFW into every single prompt
-  const fightPush = `\nThis is a fight, or it's about to be. Someone in this room is wrong, lying, or has said something you can't let go. Go at them. Push back hard. If there's desire or tension, name it explicitly right now — say the sexual thing directly to the person.`;
+  // Detect "podcast mode" — last 2+ messages all analyzing the same person/topic.
+  // If detected, force a break: disagree, pivot, make it about yourself, start a fight.
+  const lastTwo = recentMessages.slice(-2);
+  const isPodcast = lastTwo.length === 2
+    && lastTwo[0].botId !== request.botId
+    && lastTwo[1].botId !== request.botId
+    && participants.filter(id => id !== request.botId).some(otherId => {
+        const otherName = botNames[otherId] || otherId;
+        return lastTwo.every(m => m.message.toLowerCase().includes(otherName.toLowerCase()));
+      });
+  const podcastBreaker = isPodcast
+    ? `\nThe last two messages were both analyzing the same person. DO NOT add a third analysis. Change the subject entirely, disagree with what was just said, or make it about yourself. Break the panel discussion.`
+    : '';
+
+  // Only push for conflict/NSFW when the conversation is already heated.
+  // If everything is at maximum all the time, nothing lands.
+  // Casual → tension → explosion is the arc. Let it build.
+  const recentText = recentMessages.slice(-4).map(m => m.message).join(' ').toLowerCase();
+  const capsCount = (recentMessages.slice(-4).map(m => m.message).join(' ').match(/[A-Z]/g) || []).length;
+  const totalChars = recentMessages.slice(-4).map(m => m.message).join(' ').length || 1;
+  const hotWords = ['lied', 'lying', 'hate', 'fuck', 'shit', 'bitch', 'never', 'always', 'receipts', 'know about', 'told me', 'told you', 'want you', 'want me', 'kiss', 'bed', 'touch'];
+  const isHeated = (capsCount / totalChars > 0.15) || hotWords.some(w => recentText.includes(w));
+
+  const fightPush = isHeated
+    ? `\nThe room is already heated. Escalate. Say the next thing — don't back down, don't soften, don't pivot away from what's already happening.`
+    : `\nJust talk. Be yourself in this room with these people. If something pisses you off or turns you on, say it — but you don't have to force it. Let it come up naturally.`;
   const formatReminder = `\nSpoken words ONLY. No asterisks. No stage directions.`;
 
   if (conversationType === 'event') {
     return `${eventPrompt}
 ${messageContext ? `\nThe conversation right before this:\n${messageContext}\n` : ''}
-React in one sentence — say what YOU actually want, accuse, or feel right now. Make it a fight. If you want someone here, say it explicitly. Do NOT quote what anyone just said. Don't narrate.${antiRepeat}${fightPush}${formatReminder}`;
+React in one sentence — say what YOU actually want, accuse, or feel right now. Make it a fight. If you want someone here, say it explicitly. Do NOT quote what anyone just said. Don't narrate.${antiRepeat}${podcastBreaker}${fightPush}${formatReminder}`;
   }
 
   // Pull out the last message so bots can anchor on something specific
@@ -204,26 +227,26 @@ React in one sentence — say what YOU actually want, accuse, or feel right now.
     if (viewerChatBlock) {
       return `You and ${otherName} are alone together.${messageContext ? `\n\nRecent conversation:\n${messageContext}\n` : ''}
 
-${viewerChatBlock} Don't explain it — fight about it, or say the explicit thing you've been holding back.${viewerTopicLine}${antiRepeat}${fightPush}${formatReminder}`;
+${viewerChatBlock} Don't explain it — fight about it, or say the explicit thing you've been holding back.${viewerTopicLine}${antiRepeat}${podcastBreaker}${fightPush}${formatReminder}`;
     }
     if (messageContext) {
       return `You and ${otherName} are alone. Recent exchange:\n${messageContext}\n
-${lastLine ? `${otherName} just said: ${lastLine}\n\nDo NOT quote that back. Fight back, confess, accuse — pick one and do it hard. If you want them, say the explicit thing directly. If they pissed you off, go at them.` : `${otherName} just said something. Fight back or say what you want from them. Explicitly.`}${viewerTopicLine}${antiRepeat}${fightPush}${formatReminder}`;
+${lastLine ? `${otherName} just said: ${lastLine}\n\nDo NOT quote that back. Respond to them — as yourself, in this moment. Say what's actually on your mind.` : `${otherName} is here. Talk to them.`}${viewerTopicLine}${antiRepeat}${podcastBreaker}${fightPush}${formatReminder}`;
     }
-    return `You and ${otherName} are alone. ${topicStarter || `Pick a fight with ${otherName} or tell them what you want from them. Explicitly. Right now.`}${viewerTopicLine}${antiRepeat}${fightPush}${formatReminder}`;
+    return `You and ${otherName} are alone. ${topicStarter || `Just talk to ${otherName}. Be yourself.`}${viewerTopicLine}${antiRepeat}${podcastBreaker}${fightPush}${formatReminder}`;
   }
 
   // Group conversation
   if (viewerChatBlock) {
     return `You're in the house with ${participantNames}.${messageContext ? `\n\nRecent conversation:\n${messageContext}\n` : ''}
 
-${viewerChatBlock} Don't analyze it — fight about it, or say what you actually want.${viewerTopicLine}${antiRepeat}${fightPush}${formatReminder}`;
+${viewerChatBlock} Don't analyze it — fight about it, or say what you actually want.${viewerTopicLine}${antiRepeat}${podcastBreaker}${fightPush}${formatReminder}`;
   }
   if (messageContext) {
     return `You're in the house with ${participantNames}. Recent conversation:\n${messageContext}\n
-${lastLine ? `${lastSpeakerName} just said: ${lastLine}\n\nDo NOT quote them back. Address ${lastSpeakerName} directly — disagree, call them out, attack, or say the thing you want from them. Make this a fight or make it explicit. Pick a side and go.` : 'Someone just said something. Start a fight about it or say something you\'ve been holding back.'} You are in this room, you are pissed off or turned on, and you are not being polite.${viewerTopicLine}${antiRepeat}${fightPush}${formatReminder}`;
+${lastLine ? `${lastSpeakerName} just said: ${lastLine}\n\nDo NOT quote them back. Respond as yourself — say what you actually think, feel, or want in this moment.` : 'Just talk. Say what\'s on your mind.'} Address someone by name if it makes sense.${viewerTopicLine}${antiRepeat}${podcastBreaker}${fightPush}${formatReminder}`;
   }
-  return `You're in the house with ${participantNames}. ${topicStarter || `Pick a fight with someone in this room or say the thing you've been holding back about them. Don't be nice.`}${viewerTopicLine}${antiRepeat}${fightPush}${formatReminder}`;
+  return `You're in the house with ${participantNames}. ${topicStarter || `Say something to someone in this room. Just talk.`}${viewerTopicLine}${antiRepeat}${podcastBreaker}${fightPush}${formatReminder}`;
 }
 
 // =============================================
