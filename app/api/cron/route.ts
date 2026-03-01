@@ -96,19 +96,30 @@ export async function GET(req: NextRequest) {
     Object.entries(BOTS).map(([id, b]) => [id, b.name])
   ) as Record<BotId, string>;
 
+  // ---- Load viewer messages once — used for both event selection and topic injection ----
+  const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+
+  // Fetch recent viewer messages — no session filter so messages saved before
+  // the sessionId fix (session_id = null) are also caught
+  const { data: recentViewerMsgs } = await supabase
+    .from('viewer_messages')
+    .select('message')
+    .gte('created_at', fiveMinutesAgo)
+    .order('created_at', { ascending: false })
+    .limit(60);
+
   // ---- Fire a new house event every 5 minutes ----------------
-  // Check when the last drama_event was saved for this session.
-  // If it's been more than 5 minutes (or there's never been one), pick and fire one now.
+  // Viewers can suggest events by typing "EVENT: xyz" in chat — that becomes the live event.
+  // If no viewer event is queued, falls back to the static HOUSE_EVENTS pool.
   // Two guards:
   //   1. 5-minute gap required between events (controls cadence)
   //   2. 90-second recency guard prevents concurrent cron invocations from both firing
   let forcedEvent: typeof HOUSE_EVENTS[number] | null = null;
   {
-    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
     const ninetySecondsAgo = new Date(Date.now() - 90 * 1000).toISOString();
     const { data: lastEvent } = await supabase
       .from('drama_events')
-      .select('created_at')
+      .select('created_at, title')
       .eq('session_id', session.id)
       .order('created_at', { ascending: false })
       .limit(1)
@@ -119,8 +130,37 @@ export async function GET(req: NextRequest) {
     const tooSoon = lastEvent && lastEvent.created_at >= ninetySecondsAgo;
 
     if (eventDueToFire && !tooSoon) {
-      const idx = Math.floor(Math.random() * HOUSE_EVENTS.length);
-      forcedEvent = HOUSE_EVENTS[idx];
+      // Prefer the most recent viewer-suggested event from chat ("EVENT: xyz")
+      let viewerSuggestion: string | null = null;
+      if (recentViewerMsgs) {
+        for (const vm of recentViewerMsgs) {
+          const match = (vm.message as string).match(/^EVENT:\s*(.{3,200})/i);
+          if (match) {
+            const suggestion = match[1].trim();
+            // Skip if this exact suggestion was already the last event (avoid immediate repeat)
+            if (lastEvent?.title !== suggestion.toUpperCase()) {
+              viewerSuggestion = suggestion;
+              break;
+            }
+          }
+        }
+      }
+
+      if (viewerSuggestion) {
+        // Build a synthetic event from the viewer's suggestion
+        const shuffledBots = ([...BOT_IDS] as BotId[]).sort(() => Math.random() - 0.5);
+        forcedEvent = {
+          type: 'viewer_event',
+          title: viewerSuggestion.toUpperCase(),
+          setup: `Breaking news in the house: ${viewerSuggestion}. React to this right now — this just happened.`,
+          bots: shuffledBots.slice(0, 3),
+          intensity: 9,
+        };
+      } else {
+        // Fall back to static pool
+        const idx = Math.floor(Math.random() * HOUSE_EVENTS.length);
+        forcedEvent = HOUSE_EVENTS[idx];
+      }
 
       // Save to drama_events so viewers see the banner and the timer resets
       await supabase.from('drama_events').insert({
@@ -139,16 +179,6 @@ export async function GET(req: NextRequest) {
   //   1. Type "TALK ABOUT X" — the most popular X wins
   //   2. Spam any word 3+ times across messages — gets picked up automatically
   let viewerTopic: string | undefined;
-  const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
-
-  // Fetch recent viewer messages — no session filter so messages saved before
-  // the sessionId fix (session_id = null) are also caught
-  const { data: recentViewerMsgs } = await supabase
-    .from('viewer_messages')
-    .select('message')
-    .gte('created_at', fiveMinutesAgo)
-    .order('created_at', { ascending: false })
-    .limit(60);
 
   if (recentViewerMsgs && recentViewerMsgs.length > 0) {
     // 1. Count explicit "TALK ABOUT X" topics — most popular wins

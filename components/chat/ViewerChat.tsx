@@ -68,6 +68,10 @@ const FILLER_MESSAGES = [
   'true crime tina is about to crack this whole thing open',
   'TALK ABOUT who the biggest liar in the house is',
   'TALK ABOUT who would betray everyone for $10k',
+  'EVENT: chaos karen finds chad\'s secret finsta',
+  'EVENT: dj glitch drops the karen breakdown track live',
+  'EVENT: bestie bot accidentally reads her notes app out loud',
+  'EVENT: sigma steve\'s pinterest board gets airdropped to everyone',
 ];
 
 export default function ViewerChat({ sessionId, demoMode = true }: ViewerChatProps) {
@@ -380,6 +384,15 @@ export default function ViewerChat({ sessionId, demoMode = true }: ViewerChatPro
             <Send size={14} />
           </button>
         </form>
+        {/* Command hints */}
+        <div className="flex gap-3 flex-wrap">
+          <span className="text-[#5a5a78] font-mono text-[10px]">
+            <span className="text-[#ff4400]/70">EVENT: xyz</span> — trigger a house event
+          </span>
+          <span className="text-[#5a5a78] font-mono text-[10px]">
+            <span className="text-[#00ff88]/50">TALK ABOUT xyz</span> — steer the convo
+          </span>
+        </div>
       </div>
     </div>
   );
