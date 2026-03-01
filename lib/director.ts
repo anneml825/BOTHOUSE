@@ -179,7 +179,7 @@ export function buildUserPrompt(
   if (conversationType === 'event') {
     return `${eventPrompt}
 ${messageContext ? `\nThe conversation right before this:\n${messageContext}\n` : ''}
-React to this in 1 sentence. Be dramatic.${viewerTopicLine}${antiRepeat}${formatReminder}`;
+One sentence. Engage with it directly — say what YOU actually think, feel, or know. Don't narrate that it happened. Don't comment on how others are reacting. Just your raw response to the thing itself.${antiRepeat}${formatReminder}`;
   }
 
   // Pull out the last message so bots can anchor on something specific

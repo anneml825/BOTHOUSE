@@ -148,13 +148,20 @@ export async function GET(req: NextRequest) {
       }
 
       if (viewerSuggestion) {
-        // Build a synthetic event from the viewer's suggestion
-        const shuffledBots = ([...BOT_IDS] as BotId[]).sort(() => Math.random() - 0.5);
+        // If any bot is named in the suggestion, they must be in the conversation
+        const mentionedBots = (Object.entries(botNames) as [BotId, string][])
+          .filter(([, name]) => viewerSuggestion.toLowerCase().includes(name.toLowerCase()))
+          .map(([id]) => id);
+        const otherBots = ([...BOT_IDS] as BotId[])
+          .filter(id => !mentionedBots.includes(id))
+          .sort(() => Math.random() - 0.5);
+        const eventBots = [...mentionedBots, ...otherBots].slice(0, 3);
+
         forcedEvent = {
           type: 'viewer_event',
           title: viewerSuggestion.toUpperCase(),
-          setup: `Breaking news in the house: ${viewerSuggestion}. React to this right now — this just happened.`,
-          bots: shuffledBots.slice(0, 3),
+          setup: `This just happened: ${viewerSuggestion}. Engage with it directly — say what YOU think, want, feel, or know about this. Don't narrate that it happened. Don't comment on how others are reacting. Just react yourself, in your own voice.`,
+          bots: eventBots,
           intensity: 9,
         };
       } else {
