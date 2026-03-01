@@ -148,21 +148,19 @@ export function buildUserPrompt(
     ? `\nThe topic "${viewerTopic}" just came up. React to it as YOUR character — who does this make you think of in this room right now? Say something specific to THIS moment and THESE people. Don't lecture about what it means. Don't say "viewers" or "chat".`
     : '';
 
-  // Recent viewer messages — enforce as the current topic until bots have discussed it enough.
-  // Count how many recent bot messages already address the topic; if < 5, keep enforcing it.
-  const topicKeywords = (recentViewerMessages ?? [])
-    .join(' ')
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, ' ')
-    .split(/\s+/)
-    .filter(w => w.length >= 4);
-  const topicMessagesAlready = recentMessages.filter(m =>
-    topicKeywords.some(kw => m.message.toLowerCase().includes(kw))
-  ).length;
-  const topicIsActive = recentViewerMessages && recentViewerMessages.length > 0 && topicMessagesAlready < 5;
+  // viewerChatBlock only fires when there's an explicit TALK ABOUT topic (viewerTopic is set).
+  // Random viewer comments ("lol", "omg") should NOT hijack the conversation as a "topic".
+  // Count how many bot messages in this cron call already address the topic keyword — cap at 5.
+  const topicKeywords = viewerTopic
+    ? viewerTopic.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter(w => w.length >= 4)
+    : [];
+  const topicMessagesAlready = topicKeywords.length > 0
+    ? recentMessages.filter(m => topicKeywords.some(kw => m.message.toLowerCase().includes(kw))).length
+    : 0;
+  const topicIsActive = !!viewerTopic && topicMessagesAlready < 5;
 
   const viewerChatBlock = topicIsActive
-    ? `The topic right now:\n${recentViewerMessages!.map(m => `  - ${m}`).join('\n')}\n\nReact to this as YOUR character — with a feeling, an accusation, something personal. Don't make the same analytical point as whoever just spoke. React to THEM, not the concept in the abstract. Go somewhere they didn't go. Never say "chat", "viewers", or "people are saying".`
+    ? `Someone just asked: "${viewerTopic}" — bring it into this room. React to it as YOUR character. Who does this make you think of right now? Don't analyze it. Don't make the same point as whoever just spoke. React to THEM, go somewhere they didn't. Never say "chat", "viewers", or "people are saying".`
     : '';
 
   // Random drama starter only for truly fresh conversations (no messages, no viewer topic)
@@ -196,7 +194,7 @@ React to this in 1 sentence. Be dramatic.${viewerTopicLine}${antiRepeat}${format
     if (viewerChatBlock) {
       return `You and ${otherName} are alone together.${messageContext ? `\n\nRecent conversation:\n${messageContext}\n` : ''}
 
-${viewerChatBlock}${viewerTopicLine}${antiRepeat}${formatReminder}`;
+${viewerChatBlock} Don't explain what it means — feel something about it.${viewerTopicLine}${antiRepeat}${formatReminder}`;
     }
     if (messageContext) {
       return `You and ${otherName} are alone. Recent exchange:\n${messageContext}\n
@@ -209,7 +207,7 @@ ${lastLine ? `${lastSpeakerName} just said ${lastLine}.` : `${otherName} just sa
   if (viewerChatBlock) {
     return `You're in the house with ${participantNames}.${messageContext ? `\n\nRecent conversation:\n${messageContext}\n` : ''}
 
-${viewerChatBlock}${viewerTopicLine}${antiRepeat}${formatReminder}`;
+${viewerChatBlock} Don't explain what it means — feel something about it.${viewerTopicLine}${antiRepeat}${formatReminder}`;
   }
   if (messageContext) {
     return `You're in the house with ${participantNames}. Recent conversation:\n${messageContext}\n
