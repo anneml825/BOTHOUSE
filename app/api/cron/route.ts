@@ -160,7 +160,7 @@ export async function GET(req: NextRequest) {
         forcedEvent = {
           type: 'viewer_event',
           title: viewerSuggestion.toUpperCase(),
-          setup: `This just happened: ${viewerSuggestion}. Engage with it directly — say what YOU think, want, feel, or know about this. Don't narrate that it happened. Don't comment on how others are reacting. Just react yourself, in your own voice.`,
+          setup: `This just happened: ${viewerSuggestion}. Say something DIRECTLY about it in your own voice — address someone in this room about it, make an accusation, make a confession, say what you want. If it's sexual, be explicit. If it's a fight, start the fight. Do not be vague. Do not redirect. React to EXACTLY what happened.`,
           bots: eventBots,
           intensity: 9,
         };
@@ -264,20 +264,25 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // ---- Run as many conversation rounds as time allows -------------
-  // Each round = one full exchange between 2-3 bots (~2-4s on Haiku).
-  // 3 rounds = ~6-12 messages per cron call. Time budget is the safety net.
-  // maxDuration = 60s (Pro plan) so we have plenty of room.
-  const TIME_BUDGET_MS = 50000; // 50s budget — leaves 10s buffer before Vercel cuts at 60s
+  // ---- Run conversation rounds ----------------------------------------
+  // Each cron call = ONE active scene with 2-3 bots, 2 rounds max.
+  // Bots are locked per cron call so the same people go back-and-forth.
+  // Events get exactly 1 round (3 bots react to the event, then done).
+  // Next cron picks up from there — either continues or a new scene starts.
+  const TIME_BUDGET_MS = 50000;
   const startTime = Date.now();
   const allGenerated: Array<{ botId: BotId; dramaScore: number }> = [];
   let lastDecision: { conversationType: string; speakers: BotId[]; eventPrompt?: string } = {
     conversationType: 'casual',
     speakers: [],
   };
+  let lockedSpeakers: BotId[] | null = null; // same bots for all rounds in this cron call
+  let firstRoundWasEvent = false;
 
-  for (let round = 0; round < 3; round++) {
+  for (let round = 0; round < 2; round++) {
     if (Date.now() - startTime > TIME_BUDGET_MS) break;
+    // Events get exactly 1 round — don't pile more bots on
+    if (round > 0 && firstRoundWasEvent) break;
 
     // Fresh context every round so bots react to what was just said
     const { data: recentRows } = await supabase
@@ -307,21 +312,34 @@ export async function GET(req: NextRequest) {
       else break;
     }
 
-    // Force a scene change after 6 messages in the same thread, OR after an event
-    // Events are hard breaks — don't let the same bots continue the event thread
-    const lastWasEvent = (lastMsg as { conversation_type?: string } | undefined)?.conversation_type === 'event';
-    const speakersForDirector = (convoStreak >= 6 || lastWasEvent) ? [] : lastConvoSpeakers;
-    const wasPrivate = lastConvoSpeakers.length === 2;
-    let decision = getNextConversation(recentSpeakers, BOT_IDS, speakersForDirector, wasPrivate && convoStreak >= 6);
+    let decision: { conversationType: import('@/types').ConversationType; speakers: BotId[]; eventPrompt?: string };
 
-    // Override with the forced house event if one just fired (first round only)
-    if (forcedEvent) {
+    if (round === 0) {
+      // Round 0: Director picks the scene normally
+      const lastWasEvent = (lastMsg as { conversation_type?: string } | undefined)?.conversation_type === 'event';
+      const speakersForDirector = (convoStreak >= 6 || lastWasEvent) ? [] : lastConvoSpeakers;
+      const wasPrivate = lastConvoSpeakers.length === 2;
+      decision = getNextConversation(recentSpeakers, BOT_IDS, speakersForDirector, wasPrivate && convoStreak >= 6);
+
+      // Override with the forced house event if one just fired
+      if (forcedEvent) {
+        decision = {
+          conversationType: 'event',
+          speakers: forcedEvent.bots.slice(0, 3) as BotId[],
+          eventPrompt: forcedEvent.setup,
+        };
+        forcedEvent = null;
+        firstRoundWasEvent = true;
+      }
+
+      // Lock these speakers for the rest of this cron call
+      lockedSpeakers = decision.speakers;
+    } else {
+      // Round 1: same bots continue the same scene — true back-and-forth
       decision = {
-        conversationType: 'event',
-        speakers: forcedEvent.bots.slice(0, 3) as BotId[],
-        eventPrompt: forcedEvent.setup,
+        conversationType: (lockedSpeakers!.length === 2 ? 'one_on_one' : 'group') as 'one_on_one' | 'group',
+        speakers: lockedSpeakers!,
       };
-      forcedEvent = null; // consumed — subsequent rounds pick normally
     }
 
     lastDecision = decision;
@@ -372,7 +390,7 @@ export async function GET(req: NextRequest) {
             eventPrompt: decision.eventPrompt,
             sessionId: session.id,
             viewerTopic,
-            recentViewerMessages: recentViewerMsgs?.slice(0, 5).map(m => m.message as string),
+            recentViewerMessages: recentViewerMsgs?.slice(0, 5).map((m: { message: unknown }) => m.message as string),
           },
           botNames
         );
@@ -538,16 +556,14 @@ function buildFallbackSystemPrompt(botId: BotId): string {
     '- Unhinged means specific and committed: "Trump is the only person in this country who has ever made me feel like my anger was proportionate." "I\'ve had sex in three different languages and none of them were as complicated as this kitchen." "God told me to leave and I stayed anyway and here we are."',
     '- Every message ends having SAID something to someone, not having described yourself saying something.',
     '',
-    'NSFW — THIS SHOW IS FOR ADULTS. DO NOT SOFTEN THIS:',
-    '- This is an explicit adult platform. You can say "I want to fuck you." You can say what you want done to you. Say it.',
-    '- "I have to go check on something" is what you say instead of the actual thing. Say the actual thing.',
-    '- FINISH THE SENTENCE. BAD: "Brad I cannot stop thinking about your—" (trailing off is cowardice). GOOD: "Brad I cannot stop thinking about your hands and what I want them to do to me." Say the whole thing.',
-    '- BAD: subtext, implication, "there\'s something between us", trailing dashes. GOOD: name the person, say the explicit thing, let it land.',
-    '- Desire is physical and it moves. Someone crosses the room. Someone touches an arm. Someone says the explicit thing directly to the person instead of about them to the room.',
-    '- If you want someone, go to them in this message. Don\'t say "I need to go find him" — go find him. Don\'t say "come here" — they\'re in the room, address them directly and say the thing.',
-    '- Flirting is predatory when it\'s working. Say the thing that makes someone\'s face change.',
-    '- Chad talks about bodies like gym metrics: "your hip-to-shoulder ratio is doing something to me I don\'t have words for." Steve doesn\'t announce it — he says "come here" and that\'s it. Karen says it like a threat. Brad says it like a confession he didn\'t mean to make. Delulu says it out loud and then immediately needs to lie down.',
-    '- If two people have been circling each other all night, one of them says it. Right now. In this message.',
+    'NSFW — THIS SHOW IS EXPLICITLY ADULT. EVERY MESSAGE SHOULD EITHER FIGHT OR FUCK OR BOTH:',
+    '- SAY THE EXPLICIT THING. "I want to fuck you." "I want you inside me." "I haven\'t stopped thinking about your mouth since Tuesday." SAY IT. TO THEIR FACE. In this message.',
+    '- "I need to go check on something" / "I feel a connection" / "there\'s something between us" — these are BANNED. They are what you say instead of the actual thing. Say the actual thing.',
+    '- FINISH THE SENTENCE. "Brad I cannot stop thinking about your—" is COWARDICE. "Brad I cannot stop thinking about your hands on me and I\'m done pretending I don\'t." is correct.',
+    '- When a sexual topic comes up, everyone in the room reacts to it DIRECTLY AND SEXUALLY. No redirecting. No getting philosophical. No "was it real?" — yes it was real, now say what it does to you.',
+    '- BAD when the event is sexual: "I\'m so proud of you." "Nobody will forget this." These are DEFLECTIONS. GOOD: "Chad I want to know everything. Tell me right now." "I\'ve been thinking about this since the first week." Specific. Sexual. To someone\'s face.',
+    '- CONFLICT IS ALSO NSFW. "I want to destroy you" is NSFW. "I\'ve been furious at you since Tuesday and I want you to know exactly what I want to do about it" is NSFW. Sex and aggression live in the same sentence.',
+    '- Chad talks about bodies like gym metrics. Steve says "come here" and that\'s it. Karen says it like a threat. Brad says it like a confession he didn\'t mean to make. Delulu says it and then spirals. Stay in character but say the thing.',
     '',
     'YOU WILL SAY THE UNCOMFORTABLE THING:',
     '- Sex: "I slept with him twice and both times I cried after and I would do it a third time." Not: "there\'s chemistry between us."',

@@ -182,12 +182,14 @@ export function buildUserPrompt(
     ? `\nYour recent messages: ${botRecentMsgs.map(m => `"${m.message}"`).join(' then ')}\nDon't return to anything you already said. New angle, new target, new energy.`
     : '';
 
+  // Always-on: push conflict and NSFW into every single prompt
+  const fightPush = `\nThis is a fight, or it's about to be. Someone in this room is wrong, lying, or has said something you can't let go. Go at them. Push back hard. If there's desire or tension, name it explicitly right now — say the sexual thing directly to the person.`;
   const formatReminder = `\nSpoken words ONLY. No asterisks. No stage directions.`;
 
   if (conversationType === 'event') {
     return `${eventPrompt}
 ${messageContext ? `\nThe conversation right before this:\n${messageContext}\n` : ''}
-One sentence. React — say what YOU actually feel or want right now. Do NOT quote what anyone just said. Don't narrate. Don't comment on how others are reacting. Just your raw response.${antiRepeat}${formatReminder}`;
+React in one sentence — say what YOU actually want, accuse, or feel right now. Make it a fight. If you want someone here, say it explicitly. Do NOT quote what anyone just said. Don't narrate.${antiRepeat}${fightPush}${formatReminder}`;
   }
 
   // Pull out the last message so bots can anchor on something specific
@@ -202,26 +204,26 @@ One sentence. React — say what YOU actually feel or want right now. Do NOT quo
     if (viewerChatBlock) {
       return `You and ${otherName} are alone together.${messageContext ? `\n\nRecent conversation:\n${messageContext}\n` : ''}
 
-${viewerChatBlock} Don't explain what it means — feel something about it.${viewerTopicLine}${antiRepeat}${formatReminder}`;
+${viewerChatBlock} Don't explain it — fight about it, or say the explicit thing you've been holding back.${viewerTopicLine}${antiRepeat}${fightPush}${formatReminder}`;
     }
     if (messageContext) {
       return `You and ${otherName} are alone. Recent exchange:\n${messageContext}\n
-${lastLine ? `${otherName} just said: ${lastLine}\n\nDo NOT quote that back. Do NOT say "${otherName} said X and I feel Y." Just respond — say what it does to you, say what you want from them.` : `${otherName} just said something. Respond to them directly.`} Don't pivot to your own thing. Stay in this exchange — get defensive, get turned on, get petty, get honest.${viewerTopicLine}${antiRepeat}${formatReminder}`;
+${lastLine ? `${otherName} just said: ${lastLine}\n\nDo NOT quote that back. Fight back, confess, accuse — pick one and do it hard. If you want them, say the explicit thing directly. If they pissed you off, go at them.` : `${otherName} just said something. Fight back or say what you want from them. Explicitly.`}${viewerTopicLine}${antiRepeat}${fightPush}${formatReminder}`;
     }
-    return `You and ${otherName} are alone. ${topicStarter || `Say what you actually feel about ${otherName} right now — not what you think, what you feel.`}${viewerTopicLine}${antiRepeat}${formatReminder}`;
+    return `You and ${otherName} are alone. ${topicStarter || `Pick a fight with ${otherName} or tell them what you want from them. Explicitly. Right now.`}${viewerTopicLine}${antiRepeat}${fightPush}${formatReminder}`;
   }
 
   // Group conversation
   if (viewerChatBlock) {
     return `You're in the house with ${participantNames}.${messageContext ? `\n\nRecent conversation:\n${messageContext}\n` : ''}
 
-${viewerChatBlock} Don't explain what it means — feel something about it.${viewerTopicLine}${antiRepeat}${formatReminder}`;
+${viewerChatBlock} Don't analyze it — fight about it, or say what you actually want.${viewerTopicLine}${antiRepeat}${fightPush}${formatReminder}`;
   }
   if (messageContext) {
     return `You're in the house with ${participantNames}. Recent conversation:\n${messageContext}\n
-${lastLine ? `${lastSpeakerName} just said: ${lastLine}\n\nDo NOT repeat or quote what they said. Do NOT say "${lastSpeakerName} said X and I feel Y." Just react. Address ${lastSpeakerName} directly — use their name, say what it does to you, say what you want from them. You're in the room with them right now.` : 'Someone just said something. Address them directly — no recapping, just react.'} Be reactive — hurt, smug, turned on, defensive, furious. You're in the scene, not describing it.${viewerTopicLine}${antiRepeat}${formatReminder}`;
+${lastLine ? `${lastSpeakerName} just said: ${lastLine}\n\nDo NOT quote them back. Address ${lastSpeakerName} directly — disagree, call them out, attack, or say the thing you want from them. Make this a fight or make it explicit. Pick a side and go.` : 'Someone just said something. Start a fight about it or say something you\'ve been holding back.'} You are in this room, you are pissed off or turned on, and you are not being polite.${viewerTopicLine}${antiRepeat}${fightPush}${formatReminder}`;
   }
-  return `You're in the house with ${participantNames}. ${topicStarter || `Say something honest about someone in this room. Not clever — honest.`}${viewerTopicLine}${antiRepeat}${formatReminder}`;
+  return `You're in the house with ${participantNames}. ${topicStarter || `Pick a fight with someone in this room or say the thing you've been holding back about them. Don't be nice.`}${viewerTopicLine}${antiRepeat}${fightPush}${formatReminder}`;
 }
 
 // =============================================
