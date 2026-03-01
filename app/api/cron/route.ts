@@ -265,11 +265,10 @@ export async function GET(req: NextRequest) {
   }
 
   // ---- Run as many conversation rounds as time allows -------------
-  // Each round = one full exchange between 2-3 bots (~3-5s on Haiku).
-  // Hobby plan cuts us off at 10s so we get ~2 rounds per cron call.
-  // Pro plan gives 60s so we get many more.
-  // cron-job.org fires every minute → messages appear every ~10-15s.
-  const TIME_BUDGET_MS = 8500; // leave buffer before Vercel cuts the function
+  // Each round = one full exchange between 2-3 bots (~2-4s on Haiku).
+  // 3 rounds = ~6-12 messages per cron call. Time budget is the safety net.
+  // maxDuration = 60s (Pro plan) so we have plenty of room.
+  const TIME_BUDGET_MS = 50000; // 50s budget — leaves 10s buffer before Vercel cuts at 60s
   const startTime = Date.now();
   const allGenerated: Array<{ botId: BotId; dramaScore: number }> = [];
   let lastDecision: { conversationType: string; speakers: BotId[]; eventPrompt?: string } = {
@@ -277,7 +276,7 @@ export async function GET(req: NextRequest) {
     speakers: [],
   };
 
-  for (let round = 0; round < 1; round++) {
+  for (let round = 0; round < 3; round++) {
     if (Date.now() - startTime > TIME_BUDGET_MS) break;
 
     // Fresh context every round so bots react to what was just said
@@ -315,13 +314,14 @@ export async function GET(req: NextRequest) {
     const wasPrivate = lastConvoSpeakers.length === 2;
     let decision = getNextConversation(recentSpeakers, BOT_IDS, speakersForDirector, wasPrivate && convoStreak >= 6);
 
-    // Override with the forced house event if one just fired
+    // Override with the forced house event if one just fired (first round only)
     if (forcedEvent) {
       decision = {
         conversationType: 'event',
         speakers: forcedEvent.bots.slice(0, 3) as BotId[],
         eventPrompt: forcedEvent.setup,
       };
+      forcedEvent = null; // consumed — subsequent rounds pick normally
     }
 
     lastDecision = decision;
