@@ -6,6 +6,19 @@ import { DEMO_MESSAGES, BOTS } from '@/lib/bots';
 import BotMessageComponent from './BotMessage';
 import { ArrowDown } from 'lucide-react';
 
+interface DramaEvent {
+  id: string;
+  title: string;
+  description: string;
+  event_type: string;
+  intensity: number;
+  created_at: string;
+}
+
+type FeedItem =
+  | { kind: 'message'; data: BotMessage; id: string; created_at: string }
+  | { kind: 'event'; data: DramaEvent; id: string; created_at: string };
+
 // =============================================
 // Live Feed Component
 // The main scrolling feed of bot messages
@@ -23,7 +36,8 @@ export default function LiveFeed({
   demoMode = true,
 }: LiveFeedProps) {
   const [messages, setMessages] = useState<BotMessage[]>([]);
-  const [newMessageIds, setNewMessageIds] = useState<Set<string>>(new Set());
+  const [events, setEvents] = useState<DramaEvent[]>([]);
+  const [newItemIds, setNewItemIds] = useState<Set<string>>(new Set());
   const [autoScroll, setAutoScroll] = useState(true);
   const [showScrollButton, setShowScrollButton] = useState(false);
   const feedRef = useRef<HTMLDivElement>(null);
@@ -72,11 +86,11 @@ export default function LiveFeed({
       };
 
       setMessages(prev => [...prev.slice(-50), newMsg]); // Keep last 50 messages
-      setNewMessageIds(prev => new Set([...prev, newMsg.id]));
+      setNewItemIds(prev => new Set([...prev, newMsg.id]));
 
       // Remove "new" status after animation
       setTimeout(() => {
-        setNewMessageIds(prev => {
+        setNewItemIds(prev => {
           const next = new Set(prev);
           next.delete(newMsg.id);
           return next;
@@ -97,7 +111,6 @@ export default function LiveFeed({
   useEffect(() => {
     if (demoMode || !sessionId) return;
 
-    // Dynamic import to avoid issues in demo mode
     import('@/lib/supabase').then(({ supabase, isSupabaseConfigured }) => {
       if (!isSupabaseConfigured()) return;
 
@@ -112,28 +125,35 @@ export default function LiveFeed({
           if (data) setMessages(data as BotMessage[]);
         });
 
-      // Subscribe to new messages
+      // Fetch existing drama events
+      supabase
+        .from('drama_events')
+        .select('*')
+        .eq('session_id', sessionId)
+        .order('created_at', { ascending: true })
+        .then(({ data }) => {
+          if (data) setEvents(data as DramaEvent[]);
+        });
+
+      const addNew = (id: string) => {
+        setNewItemIds(prev => new Set([...prev, id]));
+        setTimeout(() => setNewItemIds(prev => { const s = new Set(prev); s.delete(id); return s; }), 1200);
+      };
+
       const channel = supabase
-        .channel(`bot_messages_${sessionId}`)
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'bot_messages',
-            filter: `session_id=eq.${sessionId}`,
-          },
+        .channel(`live_feed_${sessionId}`)
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'bot_messages', filter: `session_id=eq.${sessionId}` },
           (payload) => {
-            const newMsg = payload.new as BotMessage;
-            setMessages(prev => [...prev.slice(-50), newMsg]);
-            setNewMessageIds(prev => new Set([...prev, newMsg.id]));
-            setTimeout(() => {
-              setNewMessageIds(prev => {
-                const next = new Set(prev);
-                next.delete(newMsg.id);
-                return next;
-              });
-            }, 1000);
+            const msg = payload.new as BotMessage;
+            setMessages(prev => [...prev.slice(-50), msg]);
+            addNew(msg.id);
+          }
+        )
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'drama_events', filter: `session_id=eq.${sessionId}` },
+          (payload) => {
+            const ev = payload.new as DramaEvent;
+            setEvents(prev => [...prev, ev]);
+            addNew(ev.id);
           }
         )
         .subscribe();
@@ -179,14 +199,14 @@ export default function LiveFeed({
         </span>
       </div>
 
-      {/* Messages */}
+      {/* Messages + Event Banners, merged by timestamp */}
       <div
         ref={feedRef}
         onScroll={handleScroll}
         className="flex-1 overflow-y-auto p-4 space-y-3"
         style={{ scrollBehavior: 'smooth' }}
       >
-        {messages.length === 0 ? (
+        {messages.length === 0 && events.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center py-20">
             <div className="text-4xl mb-4">😴</div>
             <p className="text-[#5a5a78] font-mono text-sm">
@@ -197,13 +217,29 @@ export default function LiveFeed({
             </p>
           </div>
         ) : (
-          messages.map((msg) => (
-            <BotMessageComponent
-              key={msg.id}
-              message={msg}
-              isNew={newMessageIds.has(msg.id)}
-            />
-          ))
+          [...messages.map(m => ({ kind: 'message' as const, data: m, id: m.id, created_at: m.created_at })),
+           ...events.map(e => ({ kind: 'event' as const, data: e, id: e.id, created_at: e.created_at }))]
+            .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+            .map((item: FeedItem) =>
+              item.kind === 'event' ? (
+                <div
+                  key={item.id}
+                  className={`rounded-lg border border-[#ff4400]/60 bg-[#ff4400]/10 px-4 py-3 transition-all duration-500 ${newItemIds.has(item.id) ? 'scale-[1.01] border-[#ff4400]' : ''}`}
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-[#ff4400] font-mono text-xs font-bold tracking-widest">⚡ EVENT</span>
+                    <span className="text-[#ff6633] font-mono text-xs">{'🔥'.repeat(Math.max(1, Math.round((item.data as DramaEvent).intensity / 3)))}</span>
+                  </div>
+                  <p className="text-white font-mono text-sm font-bold leading-snug">{(item.data as DramaEvent).title}</p>
+                </div>
+              ) : (
+                <BotMessageComponent
+                  key={item.id}
+                  message={item.data as BotMessage}
+                  isNew={newItemIds.has(item.id)}
+                />
+              )
+            )
         )}
       </div>
 

@@ -145,9 +145,10 @@ export function buildUserPrompt(
     .map(m => `${botNames[m.botId]}: ${m.message}`)
     .join('\n');
 
-  // Viewer-commanded topic fires for all conversations (not just fresh ones)
+  // Viewer-commanded topic: when someone types TALK ABOUT X, actually discuss what X IS.
+  // Not just a name-drop — a real take. What is it, what does it mean, who does it apply to here.
   const viewerTopicLine = viewerTopic
-    ? `\nSomebody just brought up "${viewerTopic}" — weave it into what you're saying naturally. Don't say "viewers" or "chat".`
+    ? `\nTopic on the table: "${viewerTopic}". Have an actual take on this — what it is, what it means, who in this house it applies to. Make a specific claim about it, not just a passing reference. Don't say "viewers" or "chat".`
     : '';
 
   // Recent viewer messages — enforce as the current topic until bots have discussed it enough.
@@ -164,7 +165,7 @@ export function buildUserPrompt(
   const topicIsActive = recentViewerMessages && recentViewerMessages.length > 0 && topicMessagesAlready < 5;
 
   const viewerChatBlock = topicIsActive
-    ? `Current topic (keep this going — do not change the subject):\n${recentViewerMessages!.map(m => `  - ${m}`).join('\n')}\n\nThis is what everyone is talking about right now. Pick it up, continue the thread, have a take, argue with what was just said about it. If it's a character or reference, talk about what it actually IS and who or what in this house it applies to. Stay on this topic — don't pivot away. Never say "chat", "viewers", or "people are saying".`
+    ? `The topic right now:\n${recentViewerMessages!.map(m => `  - ${m}`).join('\n')}\n\nActually engage with this — don't just say the words. What IS this thing? Who in this house does it apply to and why? Make a connection to what's actually happening between people here. Have a take, make an accusation, connect it to someone's behavior. Keep discussing it — don't treat it as a passing mention and move on. Never say "chat", "viewers", or "people are saying".`
     : '';
 
   // Random drama starter only for truly fresh conversations (no messages, no viewer topic)
@@ -200,7 +201,7 @@ ${viewerChatBlock}${viewerTopicLine}${antiRepeat}${formatReminder}`;
 
 ${messageContext}
 
-Respond DIRECTLY to what ${otherName} just said. Build on it, argue with it, confess something, make an accusation — anything except ignore it.${viewerTopicLine}${antiRepeat}${formatReminder}`;
+Respond DIRECTLY to what ${otherName} just said. Build on it, argue with it, confess something, make an accusation, flirt if there's tension — anything except ignore it.${viewerTopicLine}${antiRepeat}${formatReminder}`;
     }
     return `You and ${otherName} are alone. ${topicStarter || `Say what you actually think of ${otherName} right now.`}${viewerTopicLine}${antiRepeat}${formatReminder}`;
   }
@@ -216,7 +217,7 @@ ${viewerChatBlock}${viewerTopicLine}${antiRepeat}${formatReminder}`;
 
 ${messageContext}
 
-Respond to the conversation above. Pick a side. Make an accusation. Spill something. React — don't just observe.${viewerTopicLine}${antiRepeat}${formatReminder}`;
+Respond to the conversation above. Pick a side. Make an accusation. Spill something. Flirt if the tension is there. React — don't just observe.${viewerTopicLine}${antiRepeat}${formatReminder}`;
   }
   return `You're in the house with ${participantNames}. ${topicStarter || `Say something that creates drama.`}${viewerTopicLine}${antiRepeat}${formatReminder}`;
 }

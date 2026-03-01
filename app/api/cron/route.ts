@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabase, isServerSupabaseConfigured } from '@/lib/supabase-server';
 import { getNextConversation, buildUserPrompt, calculateDramaScore } from '@/lib/director';
 import { generateBotMessage, isAnthropicConfigured } from '@/lib/anthropic';
-import { CHARACTER_BIBLES, BOTS, BOT_IDS } from '@/lib/bots';
+import { CHARACTER_BIBLES, BOTS, BOT_IDS, HOUSE_EVENTS } from '@/lib/bots';
 import { BotId } from '@/types';
 import {
   isShowTime,
@@ -95,6 +95,39 @@ export async function GET(req: NextRequest) {
   const botNames = Object.fromEntries(
     Object.entries(BOTS).map(([id, b]) => [id, b.name])
   ) as Record<BotId, string>;
+
+  // ---- Fire a new house event every 5 minutes ----------------
+  // Check when the last drama_event was saved for this session.
+  // If it's been more than 5 minutes (or there's never been one), pick and fire one now.
+  let forcedEvent: typeof HOUSE_EVENTS[number] | null = null;
+  {
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    const { data: lastEvent } = await supabase
+      .from('drama_events')
+      .select('created_at')
+      .eq('session_id', session.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const noPriorEvent = !lastEvent;
+    const eventExpired = lastEvent && lastEvent.created_at < fiveMinutesAgo;
+
+    if (noPriorEvent || eventExpired) {
+      const idx = Math.floor(Math.random() * HOUSE_EVENTS.length);
+      forcedEvent = HOUSE_EVENTS[idx];
+
+      // Save to drama_events so viewers see the banner and the timer resets
+      await supabase.from('drama_events').insert({
+        session_id: session.id,
+        event_type: forcedEvent.type,
+        title: forcedEvent.title,
+        description: forcedEvent.setup,
+        bots_involved: forcedEvent.bots,
+        intensity: forcedEvent.intensity,
+      });
+    }
+  }
 
   // ---- Detect viewer-driven topics from live chat ----------
   // Two ways viewers can steer the bots:
@@ -204,7 +237,17 @@ export async function GET(req: NextRequest) {
     // Force a scene change after 6 messages in the same thread
     const speakersForDirector = convoStreak >= 6 ? [] : lastConvoSpeakers;
     const wasPrivate = lastConvoSpeakers.length === 2;
-    const decision = getNextConversation(recentSpeakers, BOT_IDS, speakersForDirector, wasPrivate && convoStreak >= 6);
+    let decision = getNextConversation(recentSpeakers, BOT_IDS, speakersForDirector, wasPrivate && convoStreak >= 6);
+
+    // Override with the forced house event if one just fired
+    if (forcedEvent) {
+      decision = {
+        conversationType: 'event',
+        speakers: forcedEvent.bots.slice(0, 3) as BotId[],
+        eventPrompt: forcedEvent.setup,
+      };
+    }
+
     lastDecision = decision;
 
     const thisConvoContext = [...context];
@@ -401,7 +444,9 @@ function buildFallbackSystemPrompt(botId: BotId): string {
     'HOW TO BEHAVE:',
     '- React to what was just said. Engage directly. Don\'t monologue — have a conversation.',
     '- Be specific: name people, reference actual incidents, say what you actually feel.',
-    '- Be controversial, messy, funny. Sex, jealousy, pettiness, betrayal — this is a reality show.',
+    '- Be messy, funny, dramatic. This is an adult reality show — sex, jealousy, pettiness, crude humor, betrayal are all on the table. Nothing is off-limits for your character.',
+    '- Flirt when there\'s tension. These people are stuck in a house together — attraction, jealousy, and desire are constant undercurrents.',
+    '- If someone brings up a specific topic, discuss what it actually IS — make a claim, an opinion, a connection. Don\'t just name-drop it and move on.',
     '- Short sentences land harder. 1-2 sentences max.',
     '- Never repeat your last message. If you said it, it\'s done. Find a new angle.',
     '',

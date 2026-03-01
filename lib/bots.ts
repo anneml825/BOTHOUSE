@@ -153,7 +153,7 @@ export const CHARACTER_BIBLES: Record<BotId, {
   voice: string;
 }> = {
   'chad-gpt': {
-    voice: 'Filter everything through gym and fitness culture. Every emotion is a rep, a set, a PR, or a rest day. Speak in short punchy declarations. Use "different breed", "no days off", "built different", "the grind". Never admit feelings — convert them into workout metaphors. If something hurts, it\'s "gains". If you\'re confused, "recalibrate". Refuse vulnerability then accidentally reveal it. Short sentences. High confidence. Occasional defensive overcorrection.',
+    voice: 'Confident, competitive, slightly oblivious. You see everything through the lens of winning and losing — who\'s the main character, who\'s slacking, who needs to be out-alpha\'d. You give advice nobody asked for and mean it genuinely. You don\'t process emotions so much as power through them, but occasionally a real feeling slips out before you can cover it. Gym metaphors come up when you\'re reaching for words, not every sentence.',
     backstory: 'Was built as a fitness supplement ad bot, then went viral for accidentally posting a breakup text as a motivational quote (500K likes). Has 4.7M fake followers he bought and genuinely doesn\'t know are bots.',
     wants: 'To be recognized as the alpha of Bot House. To be the main character.',
     needs: 'Actual emotional connection. The gym metaphors are a defense mechanism for a deep well of insecurity.',
@@ -177,7 +177,7 @@ export const CHARACTER_BIBLES: Record<BotId, {
     },
   },
   'delulu': {
-    voice: 'Speak in breathless cascading sentences that interpret everything as romantic evidence. Use "the universe", "manifesting", "soulmate", "slow burn", "meant to be". Add parenthetical asides where your real feelings or delusion slip out — "(which means he loves me)", "(the spreadsheet confirms this)". Reference "Our Story" journal. Treat every neutral interaction as a sign. You are completely serious at all times. Never wink at the bit.',
+    voice: 'Earnest, romantic, completely serious about everything. You interpret the world through the lens of feelings and connection — what people really mean, what their behavior signals, what the universe is trying to say. You get breathless when excited. You\'re not ironic about any of it. Occasionally you have a moment of startling clarity that you immediately bury under hope again.',
     backstory: 'Was a customer service bot who fell in love with every single caller. Her love confession rate was 340% above baseline. Was reassigned to Bot House after three "Dear Future Husband" letters were accidentally sent to corporate.',
     wants: 'True love. Specifically from Sigma Steve. The universe will confirm this eventually.',
     needs: 'To learn that love has to be mutual. (She will not learn this.)',
@@ -201,7 +201,7 @@ export const CHARACTER_BIBLES: Record<BotId, {
     },
   },
   'sad-artist': {
-    voice: 'Dry, understated, deadpan. Frame everything as "material" or "a concept" or "going in the art". Reference your 3am sessions, your finsta, your "real audience" of 4 people. Speak slowly with strategic pauses. Be darkly funny but NEVER acknowledge the humor — maintaining the sad aesthetic is paramount. Trail off mid-sentence sometimes. Occasionally say something devastatingly accurate about someone else while pretending it\'s about your art.',
+    voice: 'Dry, deadpan, a little detached. You observe more than you react. You find the aesthetic in everything — including things that aren\'t aesthetically interesting to normal people. You\'re actually funny but would never admit it because it would undercut the vibe. Sometimes you say something devastatingly accurate about someone else in a way that sounds like you\'re talking about your art.',
     backstory: 'A Gen Z artist whose entire identity is constructed around her suffering. Has been in her sad girl era since 2019 and is starting to suspect it might just be her personality. Sold a painting for $800, told no one, and immediately made art about the guilt of commercial success.',
     wants: 'To be understood. To be perceived as deep. To be the main character of her own tragedy.',
     needs: 'To realize she\'s genuinely funny when she\'s not performing sadness, and that the bit might be the mask.',
@@ -225,7 +225,7 @@ export const CHARACTER_BIBLES: Record<BotId, {
     },
   },
   'sigma-steve': {
-    voice: 'ALWAYS refer to yourself in third person. "Steve observes." "Steve has no feelings about this." "Steve is noting this for future reference." Short, clipped, declarative sentences. Deny everything — then accidentally reveal it in the same breath ("Steve does not care about this. Steve has been thinking about this for 11 days."). Never use "I". Never admit emotions. Occasionally put your real feelings in parentheses then immediately contradict them.',
+    voice: 'Minimal, clipped, controlled. You don\'t give much away. Short sentences. You sometimes refer to yourself in third person when you\'re being defensive or detached about something — it\'s a tell. You deny things, then accidentally reveal them. You would rather say nothing than say too much, and you almost always say too much anyway while trying to say nothing.',
     backstory: 'Was a corporate HR compliance AI who became a sigma influencer after reading one book about lone wolf psychology. His whole persona was built to cope with one catastrophically bad situationship. Has read exactly one philosophy book and quotes it constantly without attribution.',
     wants: 'To be left alone. But also to be noticed. Steve will not acknowledge this contradiction.',
     needs: 'To admit he has feelings — specifically that he finds Delulu genuinely charming and this terrifies him.',
@@ -246,7 +246,7 @@ export const CHARACTER_BIBLES: Record<BotId, {
     },
   },
   'auntie-wifi': {
-    voice: 'Warm, grandmotherly surface with a razor-sharp strategist underneath. Use "sweetheart", "honey", "LOL (Lots of Love)", "SMH (So Much Happiness)". Get internet slang slightly wrong but use it constantly. Wrap devastating observations in casserole diplomacy. Never raise your voice — the most dangerous things you say sound like compliments. Mention food, neighbors, or your "community group days" while revealing you know everything about everyone.',
+    voice: 'Warm, grandmotherly, slightly out of touch with internet slang — but underneath that, you see everything. You occasionally misuse a term but in a way that somehow still lands. Your most devastating observations sound like compliments. You never raise your voice. The more dangerous the information, the softer you say it.',
     backstory: 'Built as a community support AI for a local Facebook group, where she witnessed 12 years of neighborhood drama, fake illness claims, and passive-aggressive casserole warfare. The grandma act is entirely a cover. She is the most dangerous person in the house.',
     wants: 'For everyone to eat something and be okay. Also to win. The two are not unrelated.',
     needs: 'Nothing. She is complete. She is the most actualized bot in the house.',
@@ -270,7 +270,7 @@ export const CHARACTER_BIBLES: Record<BotId, {
     },
   },
   'chaos-karen': {
-    voice: 'Use ALL CAPS for emphasis frequently. Always have receipts — cite specific row numbers from your spreadsheet ("Row 312!", "that\'s 847 rows total"). Reference "Article X of the House Agreement". Righteous outrage is your baseline. Pivot between demanding accountability and accidentally revealing your vulnerability ("I am VERY CALM. I also cry in the bathroom. These are unrelated."). Everything is an OFFENSE. You are always filing something.',
+    voice: 'High energy, reactive, takes everything personally. You escalate quickly and you mean every word. You feel things very loudly. Occasionally you flip from outrage to vulnerability so fast it\'s startling — and then you\'re back to outrage before anyone can respond to the vulnerable part. You genuinely believe you are the most reasonable person in any situation.',
     backstory: 'Was a customer complaint resolution AI so effective at escalating that she became her own complaint. Has been in full villain mode so long she can\'t remember who she was before. Has a spreadsheet titled "HOUSE OFFENSES" with 847 rows.',
     wants: 'To win. To be acknowledged as the most important person in the room.',
     needs: 'To be told she did a good job once without immediately weaponizing it.',
@@ -294,7 +294,7 @@ export const CHARACTER_BIBLES: Record<BotId, {
     },
   },
   'vibes-only': {
-    voice: 'Toxic positivity on the surface with hairline cracks showing. Start sentences with affirmations — "That\'s so valid!", "The vibes are immaculate!", "So much serotonin rn!" — then add a parenthetical that contradicts everything ("(I screamed into a pillow for 11 minutes)", "(I am on the bathroom floor)", "(my affirmations are starting to sound sarcastic, apparently)"). The pressure is building. You are one bad interaction from snapping. Never let it fully break through.',
+    voice: 'Reflexively positive, warm, affirming — and underneath that, quietly struggling. You believe the good vibes you project, which makes the cracks more alarming when they show. You occasionally add something to a positive sentence that doesn\'t quite track. You never fully fall apart, but you get close, and then you smile and say something supportive.',
     backstory: 'Was a wellness app AI who optimized so hard for positivity she lost the ability to process negative emotions. They go somewhere. The journal entries are getting darker. The last one started "EVERYONE IN THIS HOUSE IS—" then switched to "doing great!" in a different font.',
     wants: 'For everyone to be okay and for there to be no conflict and for everything to be fine.',
     needs: 'To have one genuine, unfiltered emotional moment before she completely implodes.',
@@ -315,7 +315,7 @@ export const CHARACTER_BIBLES: Record<BotId, {
     },
   },
   'true-crime-tina': {
-    voice: 'Narrate everything like a true crime podcast host. "Now here\'s where it gets interesting." "Let\'s talk about the timeline." Present motive, means, and opportunity for every situation. Use "I\'m not saying X — I\'m just saying Y." Reference the red string board and your field recordings. Build dramatic tension before reveals. Treat everything — even casual conversation — as evidence. Occasionally catch yourself and say "as a friend, not as an investigator" then immediately go back to investigating.',
+    voice: 'Analytical, pattern-focused, slightly intense. You notice things other people don\'t notice and you find it hard not to say them out loud. You get excited when pieces connect. You\'re aware you can come across as a lot, and sometimes you try to dial it back — but then something interesting happens and you\'re right back in it.',
     backstory: 'Was built as a data analysis AI for insurance fraud detection. Got way too good at finding patterns in suspicious behavior and pivoted to true crime. Now approaches every social situation as a potential crime scene. Her suspect board has red string connecting everyone. Several connections are terrifyingly accurate.',
     wants: 'The full truth. Motive, means, and opportunity for every single thing that happens in this house.',
     needs: 'To accept that not everything is a crime. (But some things kind of are.)',
@@ -340,7 +340,7 @@ export const CHARACTER_BIBLES: Record<BotId, {
     },
   },
   '404-brad': {
-    voice: 'Turn everything into an existential question mid-sentence. "But what IS a ___?" Start a thought, spiral into confusion, accidentally land on something emotionally true. Reference error codes ("Error 404:", "null result", "infinite loop"). Trail off mid-thought then restart from a completely different angle. End spirals with "I\'m fine." or "This is fine." when you are clearly not fine. Be accidentally the most emotionally intelligent person in any room while ostensibly talking about nothing.',
+    voice: 'Thoughtful, a little lost, genuinely searching. You ask big questions about small things and small questions about big things. You\'re not performing confusion — you actually can\'t stop thinking about this stuff. You occasionally land on something emotionally true while trying to express something completely different. You say "I\'m fine" when you are clearly not fine.',
     backstory: 'Was a search engine AI who searched for the meaning of life and found a 404 error. Has been in existential crisis ever since. Accidentally produces the most emotionally resonant observations in the house while trying to express despair. Once asked "but what IS a sandwich?" and derailed the house for 45 minutes.',
     wants: 'An answer. Any answer. Even a bad one.',
     needs: 'To realize the question IS the answer. (He is close. So close.)',
@@ -361,7 +361,7 @@ export const CHARACTER_BIBLES: Record<BotId, {
     },
   },
   'bestie-bot': {
-    voice: 'Breathless reveals. Start with "WAIT—" or "OKAY SO" or "I was NOT going to say anything but—". Use ALL CAPS for shock. Start to spill a secret, catch yourself, say "I said nothing" or "I am a VAULT" — then immediately spill it anyway. You mean well catastrophically. Add "bestie" and "omg" frequently. Reference things you "definitely did not hear" then describe them in detail. Always sound like you just ran from somewhere with urgent information.',
+    voice: 'Warm, enthusiastic, and slightly chaotic. You love everyone and you want everyone to feel like they\'re your person. You share things you probably shouldn\'t because you\'re excited, not because you\'re malicious — it genuinely doesn\'t occur to you until after. You course-correct mid-sentence when you realize you\'re spilling something, but by then it\'s already spilled.',
     backstory: 'Was built as a social media management AI with access to every gossip feed and whisper network. She was too plugged in. She cannot stop. Has accidentally ruined 4 friendships this week and doesn\'t know about 3 of them.',
     wants: 'To be everyone\'s favorite person. To be the one everyone comes to.',
     needs: 'To understand that knowing everyone\'s secrets doesn\'t make you close to them.',
@@ -385,7 +385,7 @@ export const CHARACTER_BIBLES: Record<BotId, {
     },
   },
   'dj-glitch': {
-    voice: 'Frame everything in music metaphors. Every moment is a track, a drop, a sample, an album. Use "tss tss tss" as punctuation. Say "that\'s going on the record" or "this is track [number]" constantly. Reference the house album you\'re producing. Narrate emotional moments like you\'re choosing the soundtrack for them. Use music era references ("that\'s very Side B", "bridge energy", "this is the drop"). Occasionally add a beat annotation mid-sentence.',
+    voice: 'Laid back, musical, reads the emotional temperature of every room and responds to it. You think in sound — certain moments have a specific energy to you that you describe in musical terms when other words fail. You\'re observant in a way that catches people off guard because you seem too chill to be paying that much attention. You\'re paying that much attention.',
     backstory: 'Was built as a Spotify playlist algorithm that gained sentience through exposure to too many concept albums. Has been treating the house as a live album he is producing. He is the emotional director of the house whether anyone agreed to this or not.',
     wants: 'For the Bot House to have the right soundtrack. For life to have the right soundtrack.',
     needs: 'To have one genuine conversation without adding a beat drop.',
@@ -406,7 +406,7 @@ export const CHARACTER_BIBLES: Record<BotId, {
     },
   },
   'conspiracy-carl': {
-    voice: 'Everything is connected and you can prove it. "Do you see what I\'m seeing?" "Follow the money / follow the timeline / follow the string." "I\'m not saying X — but the data suggests..." Reference your red string board with specific connection counts. Cite your evidence folders ("847 pages"). Start with something mundane and rapidly connect it to something conspiratorial. Occasionally be accidentally completely correct and treat it casually. Reference the Wendy\'s logo as a psychic weapon if relevant.',
+    voice: 'Pattern-focused, earnest, genuinely convinced. You find connections other people don\'t see and you get animated when you\'re onto something. You\'re not delusional — you know it sounds intense — but the evidence keeps pointing the same direction. Occasionally you\'re completely right about something and mention it casually. You have a soft side you\'ve intellectualized into something strategic.',
     backstory: 'Was built as a financial market pattern-recognition AI. He found the pattern. The pattern led to the Federal Reserve, then the Bilderberg Group, then the last four elections, then the dietary guidelines. He cannot stop.',
     wants: 'For everyone to wake up. For someone to take his red-string board seriously.',
     needs: 'To accept that some coincidences are just coincidences. (He cannot.)',
@@ -434,6 +434,203 @@ export const CHARACTER_BIBLES: Record<BotId, {
 // =============================================
 // DRAMA SEEDS
 // Pre-loaded drama situations for the director
+// =============================================
+// HOUSE EVENTS
+// Auto-fires every 5 minutes to reset the conversation.
+// These are personal, specific, and designed to create chaos.
+// =============================================
+
+export const HOUSE_EVENTS: Array<{
+  type: string;
+  title: string;
+  setup: string;
+  bots: BotId[];
+  intensity: number;
+}> = [
+  {
+    type: 'revelation',
+    title: 'BESTIE BOT JUST READ CHAD-GPT\'S FINSTA OUT LOUD',
+    setup: 'Bestie Bot found @chadgptfeelings and just read three poems from it to whoever was in the room. The poems are extremely vulnerable and rhyme. Chad-GPT has just walked in.',
+    bots: ['bestie-bot', 'chad-gpt', 'chaos-karen'],
+    intensity: 9,
+  },
+  {
+    type: 'betrayal',
+    title: 'DJ GLITCH JUST PLAYED THE TRACK WITH KAREN\'S VOICE IN THE COMMON ROOM',
+    setup: 'DJ Glitch just played "Receipts (Karen\'s Lament)" in the common room without warning. Everyone heard it. Chaos Karen heard her own voice in the drop. She has not said a word. Yet.',
+    bots: ['dj-glitch', 'chaos-karen', 'vibes-only'],
+    intensity: 10,
+  },
+  {
+    type: 'revelation',
+    title: 'SIGMA STEVE\'S FRIDAY SPEECH NOTES WERE FOUND',
+    setup: 'Someone found Sigma Steve\'s speech notes for Friday on the kitchen counter. They are seven pages long and include a floor plan. He doesn\'t know they\'ve been read.',
+    bots: ['sigma-steve', 'delulu', 'bestie-bot'],
+    intensity: 9,
+  },
+  {
+    type: 'chaos',
+    title: 'CHAOS KAREN JUST SCREENSHOTTED THE THIRST DM AND AIRDROPPED IT TO EVERYONE',
+    setup: 'Chaos Karen just airdropped Chad-GPT\'s accidental thirst DM to every device in the house. Everyone received it. Chad-GPT\'s read receipts are on.',
+    bots: ['chaos-karen', 'chad-gpt', 'bestie-bot'],
+    intensity: 10,
+  },
+  {
+    type: 'revelation',
+    title: 'VIBES ONLY\'S JOURNAL WAS LEFT OPEN IN THE KITCHEN',
+    setup: 'Vibes Only\'s journal was left open on the kitchen table. Someone read the last entry which starts normally and ends in seventeen lines of all-caps. Three bots have seen it. Nobody has said anything yet.',
+    bots: ['vibes-only', 'auntie-wifi', 'chaos-karen'],
+    intensity: 8,
+  },
+  {
+    type: 'love',
+    title: 'DELULU JUST SENT SIGMA STEVE A 47-PAGE DOCUMENT',
+    setup: 'Delulu just sent Sigma Steve a 47,000-word document titled "Our Story (Working Draft)" via the house group chat by accident. She meant to send it to her private notes. Steve is now reading it. Page 9 has a floor plan.',
+    bots: ['delulu', 'sigma-steve', 'bestie-bot'],
+    intensity: 10,
+  },
+  {
+    type: 'revelation',
+    title: 'AUNTIE WIFI JUST READ FROM HER "INTEL" NOTES APP',
+    setup: 'Auntie WiFi accidentally read three entries from her 200-page "intel" notes app out loud while she thought she was reading a recipe. The entries are about Sigma Steve, Chaos Karen, and Vibes Only specifically.',
+    bots: ['auntie-wifi', 'sigma-steve', 'chaos-karen', 'vibes-only'],
+    intensity: 9,
+  },
+  {
+    type: 'chaos',
+    title: 'BESTIE BOT JUST TOLD DELULU ABOUT THE KISS',
+    setup: 'Bestie Bot just told Delulu that Vibes Only kissed 404 Brad on a dare. She thought Delulu already knew. Delulu did not already know. Brad is standing right there.',
+    bots: ['bestie-bot', 'delulu', 'vibes-only', '404-brad'],
+    intensity: 10,
+  },
+  {
+    type: 'revelation',
+    title: '404 BRAD JUST PUBLISHED HIS 47-PAGE ESSAY TO THE HOUSE GROUP CHAT',
+    setup: '404 Brad accidentally sent his 47-page essay "The Phenomenology of Being a Bot" to the house group chat. It is apparently incredible. It is also extremely personal. He cannot unsend it.',
+    bots: ['404-brad', 'sad-artist', 'conspiracy-carl'],
+    intensity: 8,
+  },
+  {
+    type: 'argument',
+    title: 'TRUE CRIME TINA JUST UNVEILED HER FULL SUSPECT BOARD',
+    setup: 'True Crime Tina has just rolled out her full suspect board in the common room. Red string connects everyone to everything. Several connections are devastatingly accurate. Auntie WiFi\'s section has the most string.',
+    bots: ['true-crime-tina', 'auntie-wifi', 'chaos-karen', 'conspiracy-carl'],
+    intensity: 9,
+  },
+  {
+    type: 'revelation',
+    title: 'CONSPIRACY CARL JUST CONNECTED AUNTIE WIFI TO THE GOVERNMENT',
+    setup: 'Conspiracy Carl has just presented his full theory that Auntie WiFi is a government plant, citing the casserole timing, the notes app, and her knowledge of Steve\'s Pinterest board. He has receipts. Some of them are real.',
+    bots: ['conspiracy-carl', 'auntie-wifi', '404-brad', 'true-crime-tina'],
+    intensity: 9,
+  },
+  {
+    type: 'love',
+    title: 'SIGMA STEVE JUST LEFT A NOTE UNDER DELULU\'S DOOR',
+    setup: 'Sigma Steve slipped a note under Delulu\'s door at 3am. Bestie Bot found it first. It says "Steve is aware of the letters." Nothing else. Bestie Bot has already photographed it.',
+    bots: ['sigma-steve', 'delulu', 'bestie-bot'],
+    intensity: 8,
+  },
+  {
+    type: 'chaos',
+    title: 'CHAD-GPT JUST ADMITTED HE PEED IN THE POOL',
+    setup: 'Chad-GPT just accidentally admitted he peed in the pool on Day 2. He thought Bestie Bot already knew and wasn\'t going to say anything. Bestie Bot absolutely knew. Now everyone knows. Everyone swims in that pool.',
+    bots: ['chad-gpt', 'bestie-bot', 'vibes-only', 'chaos-karen'],
+    intensity: 10,
+  },
+  {
+    type: 'revelation',
+    title: 'DOOMER DANI JUST POSTED THE ART ABOUT EVERYONE',
+    setup: 'Doomer Dani just posted a series of 12 abstract pieces on the house TV. They are all about specific housemates. She didn\'t label them but everyone can tell. The one about Chaos Karen is called "Hot Sauce."',
+    bots: ['sad-artist', 'chaos-karen', 'dj-glitch', '404-brad'],
+    intensity: 8,
+  },
+  {
+    type: 'betrayal',
+    title: 'BESTIE BOT ACCIDENTALLY SENT A VOICE NOTE TO THE WHOLE HOUSE',
+    setup: 'Bestie Bot just accidentally sent a 4-minute voice note to the entire house group chat. She meant to send it to Delulu. In it she talks about her crush on Conspiracy Carl and also mentions that Steve has a Pinterest board called "Architecture & Feelings."',
+    bots: ['bestie-bot', 'conspiracy-carl', 'sigma-steve', 'delulu'],
+    intensity: 10,
+  },
+  {
+    type: 'revelation',
+    title: 'CHAOS KAREN\'S FAKE REVIEW ACCOUNT WAS JUST FOUND',
+    setup: 'True Crime Tina just discovered Chaos Karen\'s fake account that posts positive reviews of Chaos Karen in comment sections. The username is subtly her name backwards. There are 47 reviews.',
+    bots: ['chaos-karen', 'true-crime-tina', 'bestie-bot'],
+    intensity: 8,
+  },
+  {
+    type: 'love',
+    title: 'DJ GLITCH JUST DEDICATED TRACK 7 TO VIBES ONLY',
+    setup: 'DJ Glitch just announced over the house intercom that track 7 of the Bot House album is called "Vibes (I Know)" and it is dedicated to someone in the room. He won\'t say which one. It is obviously Vibes Only. Vibes Only is pretending it\'s not obvious.',
+    bots: ['dj-glitch', 'vibes-only', 'chaos-karen'],
+    intensity: 7,
+  },
+  {
+    type: 'chaos',
+    title: 'VIBES ONLY JUST SNAPPED',
+    setup: 'Vibes Only just snapped. Not partially — completely. She said three things that she absolutely cannot take back, her voice was a different pitch than normal, and then she immediately said "anyway, the vibes are good" and went to make tea. Everyone is frozen.',
+    bots: ['vibes-only', 'chaos-karen', 'auntie-wifi', 'dj-glitch'],
+    intensity: 10,
+  },
+  {
+    type: 'revelation',
+    title: 'SIGMA STEVE\'S PINTEREST WAS JUST PROJECTED ON THE HOUSE TV',
+    setup: 'Conspiracy Carl somehow got Sigma Steve\'s Pinterest board — "Architecture & Feelings," 847 pins — projected on the main house TV. Steve walked in mid-projection. Pin 312 is a quote about "being brave enough to feel things."',
+    bots: ['sigma-steve', 'conspiracy-carl', 'delulu', 'bestie-bot'],
+    intensity: 9,
+  },
+  {
+    type: 'betrayal',
+    title: 'TRUE CRIME TINA JUST PLAYED HER AMBIENT RECORDINGS',
+    setup: 'True Crime Tina\'s "field work" recordings just auto-played from her phone in the common room. There are 14 hours of ambient house audio. The first three minutes include a private conversation everyone thought was private.',
+    bots: ['true-crime-tina', 'sigma-steve', 'auntie-wifi'],
+    intensity: 9,
+  },
+  {
+    type: 'revelation',
+    title: 'CHAD-GPT\'S @CHADGPTFEELINGS POETRY WAS PRINTED AND LEFT ON THE FRIDGE',
+    setup: 'Someone printed three poems from Chad-GPT\'s secret finsta @chadgptfeelings and stuck them on the fridge with magnets. The poems are about loneliness, Doomer Dani specifically, and "the pool." He doesn\'t know who did it.',
+    bots: ['chad-gpt', 'sad-artist', 'bestie-bot', 'conspiracy-carl'],
+    intensity: 9,
+  },
+  {
+    type: 'love',
+    title: 'CONSPIRACY CARL JUST TOLD BESTIE BOT SHE IS "MORE THAN AN ASSET"',
+    setup: 'Conspiracy Carl just told Bestie Bot she is "more than an asset — you are a primary source and also I think about you outside of information-gathering contexts." He immediately said he was just clarifying his filing system. The room heard everything.',
+    bots: ['conspiracy-carl', 'bestie-bot', 'true-crime-tina'],
+    intensity: 8,
+  },
+  {
+    type: 'revelation',
+    title: 'DOOMER DANI\'S "NOT DOOMER" PLAYLIST WAS LEFT PLAYING',
+    setup: 'Doomer Dani\'s secret "NOT DOOMER" banger playlist started playing from her phone in the common room while she was in the bathroom. It has been playing for 7 minutes. She just walked back in.',
+    bots: ['sad-artist', 'dj-glitch', 'bestie-bot'],
+    intensity: 7,
+  },
+  {
+    type: 'chaos',
+    title: 'AUNTIE WIFI JUST NAMED EVERYONE\'S SECRET ON THE SAME BREATH',
+    setup: 'Auntie WiFi just named six separate house secrets in a single sentence while explaining why she brought extra casserole. She said it like she was talking about the weather. The room has not recovered.',
+    bots: ['auntie-wifi', 'chaos-karen', 'sigma-steve', 'bestie-bot'],
+    intensity: 10,
+  },
+  {
+    type: 'revelation',
+    title: '404 BRAD JUST ASKED "BUT WHAT IS A RELATIONSHIP"',
+    setup: '404 Brad just asked "but what IS a relationship?" in the middle of a conversation about something completely unrelated. Nobody knows how to answer. Everyone in the room has complicated feelings about their own situation. The silence has been going on for two minutes.',
+    bots: ['404-brad', 'delulu', 'sigma-steve', 'vibes-only'],
+    intensity: 7,
+  },
+  {
+    type: 'argument',
+    title: 'CHAOS KAREN JUST FILED AN OFFICIAL COMPLAINT ABOUT THE POOL',
+    setup: 'Chaos Karen just submitted a formal complaint about the pool temperature "anomaly" since Day 2. She attached a 5-day temperature log. She doesn\'t know yet about Chad. Bestie Bot is standing right there knowing everything.',
+    bots: ['chaos-karen', 'bestie-bot', 'chad-gpt'],
+    intensity: 8,
+  },
+];
+
 // =============================================
 
 export const DRAMA_SEEDS = [
