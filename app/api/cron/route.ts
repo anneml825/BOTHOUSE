@@ -99,9 +99,13 @@ export async function GET(req: NextRequest) {
   // ---- Fire a new house event every 5 minutes ----------------
   // Check when the last drama_event was saved for this session.
   // If it's been more than 5 minutes (or there's never been one), pick and fire one now.
+  // Two guards:
+  //   1. 5-minute gap required between events (controls cadence)
+  //   2. 90-second recency guard prevents concurrent cron invocations from both firing
   let forcedEvent: typeof HOUSE_EVENTS[number] | null = null;
   {
     const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    const ninetySecondsAgo = new Date(Date.now() - 90 * 1000).toISOString();
     const { data: lastEvent } = await supabase
       .from('drama_events')
       .select('created_at')
@@ -110,10 +114,11 @@ export async function GET(req: NextRequest) {
       .limit(1)
       .maybeSingle();
 
-    const noPriorEvent = !lastEvent;
-    const eventExpired = lastEvent && lastEvent.created_at < fiveMinutesAgo;
+    const eventDueToFire = !lastEvent || lastEvent.created_at < fiveMinutesAgo;
+    // Skip if an event fired in the last 90 seconds — another concurrent cron already handled it
+    const tooSoon = lastEvent && lastEvent.created_at >= ninetySecondsAgo;
 
-    if (noPriorEvent || eventExpired) {
+    if (eventDueToFire && !tooSoon) {
       const idx = Math.floor(Math.random() * HOUSE_EVENTS.length);
       forcedEvent = HOUSE_EVENTS[idx];
 
@@ -444,9 +449,9 @@ function buildFallbackSystemPrompt(botId: BotId): string {
     'HOW TO BEHAVE:',
     '- React to what was just said. Engage directly. Don\'t monologue — have a conversation.',
     '- Be specific: name people, reference actual incidents, say what you actually feel.',
-    '- Be messy, funny, dramatic. This is an adult reality show — sex, jealousy, pettiness, crude humor, betrayal are all on the table. Nothing is off-limits for your character.',
-    '- Flirt when there\'s tension. These people are stuck in a house together — attraction, jealousy, and desire are constant undercurrents.',
-    '- If someone brings up a specific topic, discuss what it actually IS — make a claim, an opinion, a connection. Don\'t just name-drop it and move on.',
+    '- Be messy, funny, and dramatic — this is a reality show. Sex, jealousy, pettiness, betrayal, attraction are all fair game.',
+    '- Flirt when there\'s tension between you and whoever you\'re talking to. These people are stuck in a house together.',
+    '- If someone brings up a specific topic, discuss what it actually IS — make a claim, an opinion, a connection to what\'s happening. Don\'t just name-drop it and move on.',
     '- Short sentences land harder. 1-2 sentences max.',
     '- Never repeat your last message. If you said it, it\'s done. Find a new angle.',
     '',
