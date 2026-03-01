@@ -179,7 +179,7 @@ export function buildUserPrompt(
   if (conversationType === 'event') {
     return `${eventPrompt}
 ${messageContext ? `\nThe conversation right before this:\n${messageContext}\n` : ''}
-One sentence. Engage with it directly — say what YOU actually think, feel, or know. Don't narrate that it happened. Don't comment on how others are reacting. Just your raw response to the thing itself.${antiRepeat}${formatReminder}`;
+One sentence. React — say what YOU actually feel or want right now. Do NOT quote what anyone just said. Don't narrate. Don't comment on how others are reacting. Just your raw response.${antiRepeat}${formatReminder}`;
   }
 
   // Pull out the last message so bots can anchor on something specific
@@ -198,7 +198,7 @@ ${viewerChatBlock} Don't explain what it means — feel something about it.${vie
     }
     if (messageContext) {
       return `You and ${otherName} are alone. Recent exchange:\n${messageContext}\n
-${lastLine ? `${otherName} just said ${lastLine}. Talk back to them — use their name, react to those specific words.` : `${otherName} just said something. Respond to them.`} Don't pivot to your own thing. Stay in this exchange — get defensive, get turned on, get petty, get honest.${viewerTopicLine}${antiRepeat}${formatReminder}`;
+${lastLine ? `${otherName} just said: ${lastLine}\n\nDo NOT quote that back. Do NOT say "${otherName} said X and I feel Y." Just respond — say what it does to you, say what you want from them.` : `${otherName} just said something. Respond to them directly.`} Don't pivot to your own thing. Stay in this exchange — get defensive, get turned on, get petty, get honest.${viewerTopicLine}${antiRepeat}${formatReminder}`;
     }
     return `You and ${otherName} are alone. ${topicStarter || `Say what you actually feel about ${otherName} right now — not what you think, what you feel.`}${viewerTopicLine}${antiRepeat}${formatReminder}`;
   }
