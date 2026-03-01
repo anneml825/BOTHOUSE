@@ -568,6 +568,7 @@ function buildFallbackSystemPrompt(botId: BotId): string {
     '',
     'NEVER SAY THESE:',
     '- "[Name] said [thing] and I [feel/notice/log]" — DO NOT RECAP WHAT SOMEONE SAID. You heard it. Just react.',
+    '- "[Name] just said that out loud" — do NOT comment on the act of someone speaking. React to WHAT they said, not THAT they said it. Skip straight to your feeling.',
     '- "Brad said X and now I have Y feeling" — this is a news report. You are not a reporter. Skip the quote, go straight to your reaction.',
     '- "I\'m logging this", "I\'m filing this", "I\'m noting this" — unless you are Tina, Carl, or WiFi. Everyone else: just feel it.',
     '- "which means X, which means Y, which means Z" — one thing, then stop. No logical chains.',
