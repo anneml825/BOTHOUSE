@@ -203,9 +203,9 @@ ${viewerChatBlock}${viewerTopicLine}${antiRepeat}${formatReminder}`;
     }
     if (messageContext) {
       return `You and ${otherName} are alone. Recent exchange:\n${messageContext}\n
-${lastLine ? `${lastSpeakerName} just said ${lastLine} — respond to that specifically.` : `Respond to what ${otherName} just said.`} Push back, call something out, confess something, flirt if the tension is there. Stay in this moment — don't reach for your backstory.${viewerTopicLine}${antiRepeat}${formatReminder}`;
+${lastLine ? `${lastSpeakerName} just said ${lastLine}.` : `${otherName} just said something.`} Don't analyze it. Feel something about it — get defensive, get turned on, get scared, get petty. Say what that feeling makes you do, not what their words "mean."${viewerTopicLine}${antiRepeat}${formatReminder}`;
     }
-    return `You and ${otherName} are alone. ${topicStarter || `Say what you actually think of ${otherName} right now.`}${viewerTopicLine}${antiRepeat}${formatReminder}`;
+    return `You and ${otherName} are alone. ${topicStarter || `Say what you actually feel about ${otherName} right now — not what you think, what you feel.`}${viewerTopicLine}${antiRepeat}${formatReminder}`;
   }
 
   // Group conversation
@@ -216,9 +216,9 @@ ${viewerChatBlock}${viewerTopicLine}${antiRepeat}${formatReminder}`;
   }
   if (messageContext) {
     return `You're in the house with ${participantNames}. Recent conversation:\n${messageContext}\n
-${lastLine ? `${lastSpeakerName} just said ${lastLine} — react to that specifically.` : 'Respond to what was just said.'} Agree, disagree, call someone out, go personal — whatever feels true to you. Stay in the moment, don't reach back into your history.${viewerTopicLine}${antiRepeat}${formatReminder}`;
+${lastLine ? `${lastSpeakerName} just said ${lastLine}.` : 'Someone just said something.'} Don't explain what it means. Have a reaction — be hurt, be smug, be turned on, be paranoid, make it about yourself. You're a person in a room, not a commentator.${viewerTopicLine}${antiRepeat}${formatReminder}`;
   }
-  return `You're in the house with ${participantNames}. ${topicStarter || `Say something that creates drama.`}${viewerTopicLine}${antiRepeat}${formatReminder}`;
+  return `You're in the house with ${participantNames}. ${topicStarter || `Say something honest about someone in this room. Not clever — honest.`}${viewerTopicLine}${antiRepeat}${formatReminder}`;
 }
 
 // =============================================
