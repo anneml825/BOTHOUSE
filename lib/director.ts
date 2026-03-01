@@ -145,10 +145,10 @@ export function buildUserPrompt(
     .map(m => `${botNames[m.botId]}: ${m.message}`)
     .join('\n');
 
-  // Viewer-commanded topic: when someone types TALK ABOUT X, actually discuss what X IS.
-  // Not just a name-drop — a real take. What is it, what does it mean, who does it apply to here.
+  // Viewer-commanded topic: when someone types TALK ABOUT X, bring it into the room personally.
+  // Not analytical takes — emotional reactions, personal connections, specific accusations.
   const viewerTopicLine = viewerTopic
-    ? `\nTopic on the table: "${viewerTopic}". Have an actual take on this — what it is, what it means, who in this house it applies to. Make a specific claim about it, not just a passing reference. Don't say "viewers" or "chat".`
+    ? `\nThe topic "${viewerTopic}" just came up. React to it as YOUR character — who does this make you think of in this room right now? Say something specific to THIS moment and THESE people. Don't lecture about what it means. Don't say "viewers" or "chat".`
     : '';
 
   // Recent viewer messages — enforce as the current topic until bots have discussed it enough.
@@ -165,7 +165,7 @@ export function buildUserPrompt(
   const topicIsActive = recentViewerMessages && recentViewerMessages.length > 0 && topicMessagesAlready < 5;
 
   const viewerChatBlock = topicIsActive
-    ? `The topic right now:\n${recentViewerMessages!.map(m => `  - ${m}`).join('\n')}\n\nActually engage with this — don't just say the words. What IS this thing? Who in this house does it apply to and why? Make a connection to what's actually happening between people here. Have a take, make an accusation, connect it to someone's behavior. Keep discussing it — don't treat it as a passing mention and move on. Never say "chat", "viewers", or "people are saying".`
+    ? `The topic right now:\n${recentViewerMessages!.map(m => `  - ${m}`).join('\n')}\n\nReact to this as YOUR character — with a feeling, an accusation, something personal. Don't make the same analytical point as whoever just spoke. React to THEM, not the concept in the abstract. Go somewhere they didn't go. Never say "chat", "viewers", or "people are saying".`
     : '';
 
   // Random drama starter only for truly fresh conversations (no messages, no viewer topic)
