@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabase, isServerSupabaseConfigured } from '@/lib/supabase-server';
 import { getNextConversation, buildUserPrompt, calculateDramaScore } from '@/lib/director';
 import { generateBotMessage, isAnthropicConfigured } from '@/lib/anthropic';
-import { CHARACTER_BIBLES, BOTS, BOT_IDS, HOUSE_EVENTS } from '@/lib/bots';
+import { CHARACTER_BIBLES, BOTS, BOT_IDS } from '@/lib/bots';
 import { BotId } from '@/types';
 import {
   isShowTime,
@@ -108,13 +108,13 @@ export async function GET(req: NextRequest) {
     .order('created_at', { ascending: false })
     .limit(60);
 
-  // ---- Fire a new house event every 5 minutes ----------------
-  // Viewers can suggest events by typing "EVENT: xyz" in chat — that becomes the live event.
-  // If no viewer event is queued, falls back to the static HOUSE_EVENTS pool.
+  // ---- Fire a house event ONLY when a viewer triggers it ----------------
+  // Viewers trigger events by typing "EVENT: xyz" in chat — that becomes the live event.
+  // No viewer suggestion = no event. Bots continue their normal conversation.
   // Two guards:
   //   1. 5-minute gap required between events (controls cadence)
   //   2. 90-second recency guard prevents concurrent cron invocations from both firing
-  let forcedEvent: typeof HOUSE_EVENTS[number] | null = null;
+  let forcedEvent: { type: string; title: string; setup: string; bots: BotId[]; intensity: number } | null = null;
   let saveEventToDramaEvents = false; // only true for brand-new events, not retries
   {
     const ninetySecondsAgo = new Date(Date.now() - 90 * 1000).toISOString();
@@ -164,12 +164,9 @@ export async function GET(req: NextRequest) {
           bots: eventBots,
           intensity: 9,
         };
-      } else {
-        // Fall back to static pool
-        const idx = Math.floor(Math.random() * HOUSE_EVENTS.length);
-        forcedEvent = HOUSE_EVENTS[idx];
+        saveEventToDramaEvents = true;
       }
-      saveEventToDramaEvents = true;
+      // No viewer suggestion → no event fires. Bots keep their normal conversation.
     } else if (!eventDueToFire && lastEvent) {
       // ---- Retry: banner fired but dialogue may have failed (API outage, timeout) ----
       // If the last event has no bot_messages yet, re-run dialogue generation
