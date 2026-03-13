@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabase, isServerSupabaseConfigured } from '@/lib/supabase-server';
 import { getNextConversation, buildUserPrompt, calculateDramaScore } from '@/lib/director';
-import { generateBotMessage, isAnthropicConfigured } from '@/lib/anthropic';
+import { generateBotMessage, isLLMConfigured } from '@/lib/llm';
 import { CHARACTER_BIBLES, BOTS, BOT_IDS } from '@/lib/bots';
 import { BotId } from '@/types';
 import {
@@ -54,8 +54,8 @@ export async function GET(req: NextRequest) {
   if (!isServerSupabaseConfigured()) {
     return NextResponse.json({ skipped: true, reason: 'Supabase not configured' });
   }
-  if (!isAnthropicConfigured()) {
-    return NextResponse.json({ skipped: true, reason: 'Anthropic not configured' });
+  if (!isLLMConfigured()) {
+    return NextResponse.json({ skipped: true, reason: 'Groq not configured' });
   }
 
   const supabase = createServerSupabase();

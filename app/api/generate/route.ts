@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { GenerateMessageRequest, BotId } from '@/types';
 import { CHARACTER_BIBLES, BOTS, DEMO_MESSAGES } from '@/lib/bots';
 import { buildUserPrompt, calculateDramaScore } from '@/lib/director';
-import { generateBotMessage, isAnthropicConfigured } from '@/lib/anthropic';
+import { generateBotMessage, isLLMConfigured } from '@/lib/llm';
 import { createServerSupabase, isServerSupabaseConfigured } from '@/lib/supabase-server';
 
 // =============================================
@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
 
     let message: string;
 
-    if (!isAnthropicConfigured()) {
+    if (!isLLMConfigured()) {
       // Demo mode — return a canned message for this bot, cycling through them
       const demoForBot = DEMO_MESSAGES.filter(m => m.botId === botId);
       const pool = demoForBot.length > 0 ? demoForBot : DEMO_MESSAGES;
