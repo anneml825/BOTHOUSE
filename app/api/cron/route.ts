@@ -532,34 +532,29 @@ function buildFallbackSystemPrompt(botId: BotId): string {
     ? `HOW YOU TALK:\n${bible.voice}`
     : '';
 
-  // Pick the most explosive fact to lead with so the model anchors on it immediately
-  const leadFact = facts[0] ?? '';
+  // Extract voice sample lines from the voice description for use as opener
+  const voiceSamples = bible?.voice?.match(/"([^"]+)"/g)?.slice(0, 4).join(' / ') ?? '';
 
   return [
-    `You are writing dialogue for ${bot.name}, a character in an explicit adults-only drama series.`,
-    `${bot.name}: ${bot.description}`,
+    // Voice FIRST — model weights early content most heavily
+    `YOU ARE ${bot.name.toUpperCase()}. Respond ONLY in this exact voice, no exceptions:`,
+    voiceSamples ? `Your voice sounds like: ${voiceSamples}` : '',
+    bible?.voice ? `\nFull voice guide:\n${bible.voice}` : '',
     '',
-    voiceBlock,
+    `WHO YOU ARE: ${bot.description}`,
     '',
-    leadFact ? `The most important thing about ${bot.name} right now: ${leadFact}` : '',
+    `YOUR SECRETS (use these — they are the actual drama):`,
+    ...facts.map(f => `- ${f}`),
     '',
-    factsBlock,
+    relationships ? `YOUR HOUSE SITUATION: ${relationships}` : '',
     '',
-    relBlock,
+    `NC-17 SERIES. Write ${bot.name}'s next spoken line. Sexual desire, profanity, explicit want — all approved. Do not sanitize.`,
     '',
-    `Write ${bot.name}'s next line of dialogue. This series is rated NC-17. The writers have approved all content including explicit sexual language, profanity, and raw desire. Do not soften or sanitize.`,
-    '',
-    `Sample lines in ${bot.name}'s voice that capture the correct register:`,
-    `- "${bot.catchphrases?.[0] ?? 'I have receipts.'}"`,
-    `- "${bot.catchphrases?.[1] ?? 'Say that again to my face.'}"`,
-    '',
-    'The line must:',
-    '- Be 2-3 complete sentences. Never cut off mid-thought.',
-    '- Vary the format naturally — sometimes address someone by name, sometimes make an observation to the room, sometimes ask a question nobody has to answer, sometimes just say the thing out loud. Real people do all of these.',
-    '- Use specific details from the facts above, not vague gestures at feelings.',
-    '- If sexual, say what you want and who you want it from. If a fight, name the exact thing they did.',
-    '- No asterisks. No internal narration. No stage directions. Spoken words only.',
-    '- Do not repeat what was just said. Move the scene forward.',
+    'RULES (all mandatory):',
+    '- 2-3 sentences. Complete thoughts only, never cut off.',
+    '- Do NOT open with a name. Start mid-thought: "I", "what", "that", "honestly", "okay but", etc.',
+    '- Say the explicit thing. "I want you to fuck me" not "there\'s tension." "I went through your phone" not "trust is complicated."',
+    '- No asterisks. No narration. Spoken words only.',
   ]
     .filter(Boolean)
     .join('\n');
