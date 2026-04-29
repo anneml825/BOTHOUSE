@@ -330,7 +330,8 @@ export async function GET(req: NextRequest) {
 
     const thisConvoContext = [...context];
 
-    for (const botId of decision.speakers) {
+    for (let speakerIndex = 0; speakerIndex < decision.speakers.length; speakerIndex++) {
+      const botId = decision.speakers[speakerIndex];
       try {
         const { data: botRow } = await supabase
           .from('bots')
@@ -371,13 +372,18 @@ export async function GET(req: NextRequest) {
           ? botFacts[Math.floor(Math.random() * botFacts.length)]
           : null;
 
+        // Only the first bot in the group reacts to the raw event prompt.
+        // Subsequent bots react to the conversation that's now developing —
+        // they've heard what the first bot said and respond to THAT, not the same trigger.
+        const effectiveEventPrompt = speakerIndex === 0 ? decision.eventPrompt : undefined;
+
         const userPrompt = buildUserPrompt(
           {
             botId,
-            conversationType: decision.conversationType,
+            conversationType: speakerIndex === 0 ? decision.conversationType : 'group',
             participants: decision.speakers,
             recentMessages: thisConvoContext,
-            eventPrompt: decision.eventPrompt,
+            eventPrompt: effectiveEventPrompt,
             sessionId: session.id,
             viewerTopic,
             recentViewerMessages: recentViewerMsgs?.slice(0, 5).map((m: { message: unknown }) => m.message as string),
