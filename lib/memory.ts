@@ -1,6 +1,5 @@
 import { BotId } from '@/types';
 import { BOTS } from './bots';
-import { getAnthropicClient } from './anthropic';
 
 // =============================================
 // EPISODE SCHEDULING
@@ -224,8 +223,6 @@ export async function closeSessionAndExtractMemories(
     .map((m: { bot_id: string; message: string }) => `${botNames[m.bot_id] || m.bot_id}: ${m.message}`)
     .join('\n');
 
-  const client = getAnthropicClient();
-
   let extraction: {
     memories: Record<string, Array<{ content: string; type: string; importance: number }>>;
     relationships: Array<{ bot1: string; bot2: string; type: string; intensity: number; description: string }>;
@@ -233,10 +230,19 @@ export async function closeSessionAndExtractMemories(
   };
 
   try {
-    const response = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 1500,
-      system: `You are the memory keeper for Bot House, an AI reality show.
+    const groqResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        max_tokens: 1500,
+        messages: [
+          {
+            role: 'system',
+            content: `You are the memory keeper for Bot House, an AI reality show.
 After each episode you extract memorable events, relationship updates, and per-character memories from the transcript.
 
 ALWAYS return valid JSON with EXACTLY this structure (no markdown, no code blocks, no extra text):
@@ -262,16 +268,21 @@ Rules:
 - Max 3 memories per bot, 6 relationships total, 3 drama events
 - Relationship intensity: -10 (pure enemies) to +10 (intensely positive)
 - If something from a past relationship changed, reflect the NEW state`,
-      messages: [
-        {
-          role: 'user',
-          content: `Extract memories from tonight's Bot House episode:\n\n${transcript.slice(0, 10000)}\n\nWhat should the bots remember for future episodes?`,
-        },
-      ],
+          },
+          {
+            role: 'user',
+            content: `Extract memories from tonight's Bot House episode:\n\n${transcript.slice(0, 10000)}\n\nWhat should the bots remember for future episodes?`,
+          },
+        ],
+      }),
     });
 
-    const text =
-      response.content[0].type === 'text' ? response.content[0].text.trim() : '{}';
+    if (!groqResponse.ok) {
+      throw new Error(`Groq API error ${groqResponse.status}: ${await groqResponse.text()}`);
+    }
+
+    const data = await groqResponse.json();
+    const text: string = data.choices?.[0]?.message?.content?.trim() ?? '{}';
     extraction = JSON.parse(text);
   } catch (err) {
     console.error('[memory] Failed to extract memories:', err);
