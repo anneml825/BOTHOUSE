@@ -18,7 +18,7 @@ import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 // The homepage / main experience
 // =============================================
 
-const IS_DEMO = process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
+const IS_DEMO = false;
 
 export default function HomePage() {
   const [chaosLevel, setChaosLevel] = useState(0);

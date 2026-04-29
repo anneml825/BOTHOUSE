@@ -11,7 +11,7 @@ export async function GET() {
   if (!isServerSupabaseConfigured()) {
     return NextResponse.json({
       data: {
-        isLive: process.env.NEXT_PUBLIC_DEMO_MODE === 'true',
+        isLive: false,
         currentSession: null,
         nextSessionTime: null,
       },
