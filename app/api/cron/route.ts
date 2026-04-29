@@ -545,10 +545,11 @@ function buildFallbackSystemPrompt(botId: BotId): string {
     '✗ Trailing off with a dash —',
     '',
     'FORMAT:',
-    '- 1-3 sentences spoken out loud directly to someone in the room.',
-    '- Address them by name. Make a move, accusation, confession, or demand.',
+    '- 2-4 sentences minimum. One sentence is not enough. Develop the hit.',
+    '- Address someone by name. Make a move, accusation, confession, or demand.',
     '- No asterisks. No stage directions. No narrating your feelings. Just speak.',
     '- Never repeat your last message.',
+    '- If you are attracted to someone, name the specific thing you want. If you are angry, say exactly what they did.',
   ]
     .filter(s => s !== undefined)
     .join('\n');
