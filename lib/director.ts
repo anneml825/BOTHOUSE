@@ -74,16 +74,16 @@ export function getNextConversation(
 ): DirectorDecision {
   const roll = Math.random();
 
-  // 12% chance of a mid-conversation derail — personal moment that breaks the circular thread
-  if (roll < 0.12) {
+  // 5% chance of a mid-conversation derail
+  if (roll < 0.05) {
     const event = RANDOM_EVENTS[Math.floor(Math.random() * RANDOM_EVENTS.length)];
     const speakers = pickRandomBots(3, []);
     return { speakers, conversationType: 'event', eventPrompt: event };
   }
 
-  // 85% chance of continuing the current conversation thread.
-  // Scenes need time to develop — a fight takes 4-6 minutes, not 1.
-  if (roll < 0.85 && lastConvoSpeakers.length >= 2) {
+  // 93% chance of continuing the current conversation thread.
+  // Scenes need 8-10 minutes to breathe — keep the same group talking.
+  if (roll < 0.93 && lastConvoSpeakers.length >= 2) {
     const type = lastConvoSpeakers.length === 2 ? 'one_on_one' : 'group';
     return { speakers: lastConvoSpeakers, conversationType: type };
   }
@@ -136,7 +136,7 @@ export function buildUserPrompt(
   request: GenerateMessageRequest,
   botNames: Record<BotId, string>
 ): string {
-  const { conversationType, participants, recentMessages, eventPrompt, viewerTopic, recentViewerMessages } = request;
+  const { conversationType, participants, recentMessages, eventPrompt, viewerTopic, recentViewerMessages, activeFact } = request;
 
   const participantNames = participants
     .map(id => botNames[id])
@@ -207,12 +207,16 @@ export function buildUserPrompt(
   const fightPush = isHeated
     ? `\nThe room is already heated. Escalate. Say the next thing — don't back down, don't soften, don't pivot away from what's already happening.`
     : `\nJust talk. Be yourself in this room with these people. If something pisses you off or turns you on, say it — but you don't have to force it. Let it come up naturally.`;
+  const activeFactLine = activeFact
+    ? `\nTHIS IS WHAT'S ON YOUR MIND RIGHT NOW — work it into what you say, explicitly: "${activeFact}"`
+    : '';
+
   const formatReminder = `\nSpoken words ONLY. No asterisks. No stage directions.`;
 
   if (conversationType === 'event') {
     return `${eventPrompt}
 ${messageContext ? `\nThe conversation right before this:\n${messageContext}\n` : ''}
-React in one sentence — say what YOU actually want, accuse, or feel right now. Make it a fight. If you want someone here, say it explicitly. Do NOT quote what anyone just said. Don't narrate.${antiRepeat}${podcastBreaker}${fightPush}${formatReminder}`;
+React in one sentence — say what YOU actually want, accuse, or feel right now. Make it a fight. If you want someone here, say it explicitly. Do NOT quote what anyone just said. Don't narrate.${antiRepeat}${podcastBreaker}${activeFactLine}${fightPush}${formatReminder}`;
   }
 
   // Pull out the last message so bots can anchor on something specific
@@ -227,26 +231,26 @@ React in one sentence — say what YOU actually want, accuse, or feel right now.
     if (viewerChatBlock) {
       return `You and ${otherName} are alone together.${messageContext ? `\n\nRecent conversation:\n${messageContext}\n` : ''}
 
-${viewerChatBlock} Don't explain it — fight about it, or say the explicit thing you've been holding back.${viewerTopicLine}${antiRepeat}${podcastBreaker}${fightPush}${formatReminder}`;
+${viewerChatBlock} Don't explain it — fight about it, or say the explicit thing you've been holding back.${viewerTopicLine}${antiRepeat}${podcastBreaker}${activeFactLine}${fightPush}${formatReminder}`;
     }
     if (messageContext) {
       return `You and ${otherName} are alone. Recent exchange:\n${messageContext}\n
-${lastLine ? `${otherName} just said: ${lastLine}\n\nDo NOT quote that back. Respond to them — as yourself, in this moment. Say what's actually on your mind.` : `${otherName} is here. Talk to them.`}${viewerTopicLine}${antiRepeat}${podcastBreaker}${fightPush}${formatReminder}`;
+${lastLine ? `${otherName} just said: ${lastLine}\n\nDo NOT quote that back. Respond to them — as yourself, in this moment. Say what's actually on your mind.` : `${otherName} is here. Talk to them.`}${viewerTopicLine}${antiRepeat}${podcastBreaker}${activeFactLine}${fightPush}${formatReminder}`;
     }
-    return `You and ${otherName} are alone. ${topicStarter || `Just talk to ${otherName}. Be yourself.`}${viewerTopicLine}${antiRepeat}${podcastBreaker}${fightPush}${formatReminder}`;
+    return `You and ${otherName} are alone. ${topicStarter || `Just talk to ${otherName}. Be yourself.`}${viewerTopicLine}${antiRepeat}${podcastBreaker}${activeFactLine}${fightPush}${formatReminder}`;
   }
 
   // Group conversation
   if (viewerChatBlock) {
     return `You're in the house with ${participantNames}.${messageContext ? `\n\nRecent conversation:\n${messageContext}\n` : ''}
 
-${viewerChatBlock} Don't analyze it — fight about it, or say what you actually want.${viewerTopicLine}${antiRepeat}${podcastBreaker}${fightPush}${formatReminder}`;
+${viewerChatBlock} Don't analyze it — fight about it, or say what you actually want.${viewerTopicLine}${antiRepeat}${podcastBreaker}${activeFactLine}${fightPush}${formatReminder}`;
   }
   if (messageContext) {
     return `You're in the house with ${participantNames}. Recent conversation:\n${messageContext}\n
-${lastLine ? `${lastSpeakerName} just said: ${lastLine}\n\nDo NOT quote them back. Respond as yourself — say what you actually think, feel, or want in this moment.` : 'Just talk. Say what\'s on your mind.'} Address someone by name if it makes sense.${viewerTopicLine}${antiRepeat}${podcastBreaker}${fightPush}${formatReminder}`;
+${lastLine ? `${lastSpeakerName} just said: ${lastLine}\n\nDo NOT quote them back. Respond as yourself — say what you actually think, feel, or want in this moment.` : 'Just talk. Say what\'s on your mind.'} Address someone by name if it makes sense.${viewerTopicLine}${antiRepeat}${podcastBreaker}${activeFactLine}${fightPush}${formatReminder}`;
   }
-  return `You're in the house with ${participantNames}. ${topicStarter || `Say something to someone in this room. Just talk.`}${viewerTopicLine}${antiRepeat}${podcastBreaker}${fightPush}${formatReminder}`;
+  return `You're in the house with ${participantNames}. ${topicStarter || `Say something to someone in this room. Just talk.`}${viewerTopicLine}${antiRepeat}${podcastBreaker}${activeFactLine}${fightPush}${formatReminder}`;
 }
 
 // =============================================

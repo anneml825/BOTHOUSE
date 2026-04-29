@@ -311,7 +311,7 @@ export async function GET(req: NextRequest) {
     // Director picks the scene. Forced scene change after 12 messages (was 6)
     // so scenes have time to breathe — a fight can develop over 4+ minutes.
     const lastWasEvent = (lastMsg as { conversation_type?: string } | undefined)?.conversation_type === 'event';
-    const speakersForDirector = (convoStreak >= 12 || lastWasEvent) ? [] : lastConvoSpeakers;
+    const speakersForDirector = (convoStreak >= 20 || lastWasEvent) ? [] : lastConvoSpeakers;
     const wasPrivate = lastConvoSpeakers.length === 2;
     let decision: { conversationType: import('@/types').ConversationType; speakers: BotId[]; eventPrompt?: string } =
       getNextConversation(recentSpeakers, BOT_IDS, speakersForDirector, wasPrivate && convoStreak >= 12);
@@ -365,6 +365,12 @@ export async function GET(req: NextRequest) {
           content: `${botNames[m.botId] || m.botId}: ${m.message}`,
         }));
 
+        // Pick a random dirty fact to inject so the bot actively uses it this turn
+        const botFacts = BOT_FACTS[botId] || [];
+        const activeFact = botFacts.length
+          ? botFacts[Math.floor(Math.random() * botFacts.length)]
+          : null;
+
         const userPrompt = buildUserPrompt(
           {
             botId,
@@ -375,6 +381,7 @@ export async function GET(req: NextRequest) {
             sessionId: session.id,
             viewerTopic,
             recentViewerMessages: recentViewerMsgs?.slice(0, 5).map((m: { message: unknown }) => m.message as string),
+            activeFact: activeFact ?? undefined,
           },
           botNames
         );

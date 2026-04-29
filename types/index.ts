@@ -210,8 +210,9 @@ export interface GenerateMessageRequest {
   recentMessages: Array<{ botId: BotId; message: string }>;
   eventPrompt?: string;
   sessionId?: string;
-  viewerTopic?: string; // Set when viewers command "TALK ABOUT X" in live chat
-  recentViewerMessages?: string[]; // Raw recent viewer chat messages for bots to react to
+  viewerTopic?: string;
+  recentViewerMessages?: string[];
+  activeFact?: string; // A specific dirty secret to work into this message
 }
 
 export interface GenerateMessageResponse {
