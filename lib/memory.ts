@@ -10,11 +10,7 @@ import { BOTS } from './bots';
 // =============================================
 
 export function isShowTime(): boolean {
-  if (process.env.FORCE_SHOW === 'true') return true;
-  const tz = process.env.SHOW_TIMEZONE || 'America/New_York';
-  const hour = getCurrentHour(tz);
-  // 19:00–22:59 = show is live
-  return hour >= 19 && hour < 23;
+  return true; // 24/7 — bots always on
 }
 
 // True only during the first minute of 11pm — used to trigger
