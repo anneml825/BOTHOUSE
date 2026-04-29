@@ -5,7 +5,7 @@
 // =============================================
 
 const GROQ_BASE_URL = 'https://api.groq.com/openai/v1';
-const MODEL = 'llama-3.3-70b-versatile';
+const MODEL = 'mixtral-8x7b-32768';
 
 export function isLLMConfigured(): boolean {
   return !!process.env.GROQ_API_KEY && process.env.GROQ_API_KEY !== 'placeholder-groq-key';
