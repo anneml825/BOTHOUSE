@@ -206,12 +206,12 @@ export function buildUserPrompt(
 
   const fightPush = isHeated
     ? `\nThe room is already heated. Escalate. Say the next thing — don't back down, don't soften, don't pivot away from what's already happening.`
-    : `\nJust talk. Be yourself in this room with these people. If something pisses you off or turns you on, say it — but you don't have to force it. Let it come up naturally.`;
+    : `\nTalk naturally. Make an observation to the room, ask a question nobody has to answer, address someone directly, or just say what's on your mind. Don't start every line with someone's name — real people don't do that.`;
   const activeFactLine = activeFact
     ? `\nTHIS IS WHAT'S ON YOUR MIND RIGHT NOW — work it into what you say, explicitly: "${activeFact}"`
     : '';
 
-  const formatReminder = `\nSpoken words ONLY. No asterisks. No stage directions.`;
+  const formatReminder = `\nSpoken words ONLY. No asterisks. No stage directions. Never cut off mid-sentence — always finish the thought.`;
 
   if (conversationType === 'event') {
     return `${eventPrompt}

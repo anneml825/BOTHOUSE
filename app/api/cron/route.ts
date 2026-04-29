@@ -548,12 +548,12 @@ function buildFallbackSystemPrompt(botId: BotId): string {
     `- "${bot.catchphrases?.[1] ?? 'Say that again to my face.'}"`,
     '',
     'The line must:',
-    '- Be 2-3 sentences spoken aloud to someone in the room.',
-    '- Address them by name. Say the explicit thing directly — desire, accusation, confession.',
+    '- Be 2-3 complete sentences. Never cut off mid-thought.',
+    '- Vary the format naturally — sometimes address someone by name, sometimes make an observation to the room, sometimes ask a question nobody has to answer, sometimes just say the thing out loud. Real people do all of these.',
     '- Use specific details from the facts above, not vague gestures at feelings.',
-    '- If sexual, say what you want done and by whom. If a fight, name the exact lie or betrayal.',
-    '- No asterisks. No internal narration. Spoken words only.',
-    '- Do not repeat what was just said. React and escalate.',
+    '- If sexual, say what you want and who you want it from. If a fight, name the exact thing they did.',
+    '- No asterisks. No internal narration. No stage directions. Spoken words only.',
+    '- Do not repeat what was just said. Move the scene forward.',
   ]
     .filter(Boolean)
     .join('\n');

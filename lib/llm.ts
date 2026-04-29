@@ -27,7 +27,7 @@ export async function generateBotMessage(
     },
     body: JSON.stringify({
       model: MODEL,
-      max_tokens: 300,
+      max_tokens: 450,
       temperature: 1.2,
       messages: [
         { role: 'system', content: systemPrompt },
