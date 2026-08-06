@@ -8,6 +8,7 @@ for "genuinely ambiguous residue" only.
 
 from __future__ import annotations
 
+import ast
 import re
 import subprocess
 import sys
@@ -16,16 +17,42 @@ from pathlib import Path
 from typing import Optional
 
 CODE_FENCE_RE = re.compile(r"```(?:python)?\s*\n(.*?)```", re.DOTALL)
+# A real model prompted with "--- filename ---" (this task's own convention
+# for presenting source, see tasks/bug_diagnosis/*/task.json's `prompt`)
+# tends to echo that convention back instead of markdown fences.
+FILENAME_MARKER_RE = re.compile(r"^-{2,}\s*\S+\.\w+\s*-{2,}\s*$", re.MULTILINE)
+
+
+def _is_valid_python(source: str) -> bool:
+    try:
+        ast.parse(source)
+        return True
+    except SyntaxError:
+        return False
 
 
 def extract_code(content: str) -> str:
     """Structured (B/C) decisions carry raw source directly in `content`.
-    Condition A prose may wrap the same source in a fenced code block —
-    extract it so scoring is representation-agnostic."""
-    m = CODE_FENCE_RE.search(content)
-    if m:
-        return m.group(1).strip() + "\n"
-    return content.strip() + "\n"
+    Prose (Condition A, or a real model mixing explanation with code
+    despite instructions not to) may wrap or precede the same source with
+    a markdown fence or a "--- filename ---" marker. Rather than assume
+    one specific convention, try each candidate extraction and keep the
+    first one that's actually valid Python — syntactic validity is a
+    representation-agnostic signal a raw regex guess isn't."""
+    candidates = [m.strip() for m in CODE_FENCE_RE.findall(content)]
+    markers = list(FILENAME_MARKER_RE.finditer(content))
+    if markers:
+        candidates.append(content[markers[-1].end():].strip())
+    candidates.append(content.strip())
+
+    for candidate in candidates:
+        if candidate and _is_valid_python(candidate):
+            return candidate + "\n"
+    # Nothing parsed cleanly — return the best guess (fenced/marker over
+    # raw) so the caller still gets a deterministic, legible test failure
+    # rather than a crash; a genuinely incomplete answer should score 0,
+    # not error out.
+    return (candidates[0] if candidates else content).strip() + "\n"
 
 
 def run_pytest_patch(module_filename: str, module_source: str, test_filename: str, test_source: str) -> dict:

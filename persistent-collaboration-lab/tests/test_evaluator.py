@@ -22,6 +22,30 @@ def test_extract_code_raw_passthrough():
     assert "def f()" in extract_code(content)
 
 
+def test_extract_code_from_filename_marker_convention():
+    content = (
+        "The root cause is a mutable default argument.\n\n"
+        "--- cache_module.py ---\n\n"
+        "def cached_fetch(key, store, cache=None):\n"
+        "    if cache is None:\n"
+        "        cache = {}\n"
+        "    return store.get(key)\n"
+    )
+    extracted = extract_code(content)
+    assert "def cached_fetch" in extracted
+    assert "root cause" not in extracted
+
+
+def test_extract_code_prefers_valid_python_over_raw_prose_mix():
+    # No fence, no marker, code embedded after explanatory prose with no
+    # delimiter at all — extract_code can't rescue this (nothing to key
+    # off), so it should fall back to returning the raw content rather
+    # than crashing.
+    content = "I think the fix is to use cache=None. def f():\n    return 1\n"
+    extracted = extract_code(content)
+    assert extracted.strip() == content.strip()
+
+
 def test_bug_diagnosis_scores_zero_for_unfixed_code(bug_task):
     result = evaluate(bug_task, bug_task["scoring"]["buggy_source"])
     assert result["task_score"] == 0.0
