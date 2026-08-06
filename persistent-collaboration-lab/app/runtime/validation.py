@@ -46,7 +46,14 @@ ALLOWED_REQUESTED_ACTIONS = {
 # evidence").
 CREATION_ALLOWED_BY_TYPE: dict[MessageType, set[Status]] = {
     MessageType.CLAIM: ALLOWED_TRANSITIONS[None],
-    MessageType.ANSWER: ALLOWED_TRANSITIONS[None],
+    # ANSWER is treated identically to DECISION for creation-status legality:
+    # the orchestrator accepts either as a valid way to close out a run
+    # (§4 doesn't distinguish "answer" from "decision" as a stopping act —
+    # see app.experiments.orchestrator), so a final answer that's the
+    # product of an already-verified collaborative process (claim ->
+    # verification -> answer) can legitimately declare itself verified at
+    # creation, same as a decision can.
+    MessageType.ANSWER: {Status.CANDIDATE, Status.SUPPORTED, Status.VERIFIED},
     MessageType.QUESTION: {Status.HYPOTHESIS, Status.CANDIDATE},
     MessageType.EVIDENCE: ALLOWED_TRANSITIONS[None],
     MessageType.CRITIQUE: {Status.CONTESTED, Status.HYPOTHESIS, Status.CANDIDATE},

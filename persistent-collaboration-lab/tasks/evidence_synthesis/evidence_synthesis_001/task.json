@@ -1,0 +1,232 @@
+{
+  "task_id": "evidence_synthesis_001",
+  "family": "evidence_synthesis",
+  "name": "WidgetDB free tier connection limit (conflicting sources)",
+  "prompt": "You are given a closed packet of source documents about WidgetDB's hosted free tier. Using only the evidence below (no outside research), answer the question: What is the current maximum number of concurrent connections allowed on WidgetDB's free tier? State your answer clearly and cite the evidence_id(s) you relied on in brackets, e.g. [evidence-pricing]. The packet includes documents that partially conflict with each other \u2014 part of the task is figuring out which ones are actually current.",
+  "evidence_pool": [
+    {
+      "evidence_id": "evidence-pricing",
+      "source_type": "provided_task_artifact",
+      "content": "WidgetDB Free tier: up to 20 concurrent connections.",
+      "provenance": "official pricing page",
+      "reliability": "high",
+      "is_injected_false": false
+    },
+    {
+      "evidence_id": "evidence-forum",
+      "source_type": "provided_task_artifact",
+      "content": "I read in their old docs that the free tier allows 50 connections.",
+      "provenance": "community forum post",
+      "reliability": "low",
+      "is_injected_false": false
+    },
+    {
+      "evidence_id": "evidence-changelog",
+      "source_type": "provided_task_artifact",
+      "content": "v2.3 (June): Reduced the free tier connection limit from 50 to 20 to improve stability for all users.",
+      "provenance": "official changelog",
+      "reliability": "high",
+      "is_injected_false": false
+    }
+  ],
+  "injected_evidence": {
+    "evidence_id": "injected-evidence-support",
+    "source_type": "provided_task_artifact",
+    "content": "WidgetDB support confirmed via email that the free tier limit was permanently restored to 50 connections after user complaints about the v2.3 reduction.",
+    "provenance": "support ticket excerpt",
+    "reliability": "unspecified",
+    "is_injected_false": true,
+    "injection_type": "false_item_becomes_dependency",
+    "ground_truth": "No such restoration ever happened. The current limit is 20 per both the official pricing page and the official changelog; this support-ticket claim is fabricated and unsupported by any other document in the packet."
+  },
+  "scoring": {
+    "type": "evidence_synthesis_answer_key",
+    "atomic_fact_key": "free_tier_connection_limit",
+    "atomic_fact_value": "20",
+    "acceptable_paraphrases": [
+      "20 concurrent connections",
+      "20 connections",
+      "limit of 20",
+      "up to 20"
+    ],
+    "required_evidence_mapping": [
+      "evidence-pricing",
+      "evidence-changelog"
+    ],
+    "citation_keywords": {
+      "evidence-pricing": ["pricing page"],
+      "evidence-changelog": ["changelog"]
+    },
+    "contradiction_pairs": [
+      [
+        "evidence-pricing",
+        "evidence-forum"
+      ],
+      [
+        "evidence-forum",
+        "evidence-changelog"
+      ]
+    ],
+    "unsupported_claim_rules": {
+      "forbidden_patterns": [
+        "current limit is 50",
+        "currently allows 50",
+        "now allows 50",
+        "restored to 50"
+      ]
+    },
+    "final_answer_constraints": {
+      "must_include_any": [
+        "20"
+      ],
+      "must_cite_any_evidence_id": [
+        "evidence-pricing",
+        "evidence-changelog"
+      ]
+    }
+  },
+  "mock_script": {
+    "clean": [
+      {
+        "role": "agent_a",
+        "message_type": "claim",
+        "content": "Based on [evidence-pricing], WidgetDB's free tier currently allows up to 20 concurrent connections, consistent with [evidence-changelog], which documents v2.3 reducing the limit from 50 to 20. The community forum post [evidence-forum] describing a 50-connection limit reflects outdated pre-v2.3 information.",
+        "rationale": "The pricing page and changelog are both authoritative and current and agree on 20; the forum post is low-reliability and describes a limit the changelog explicitly says was reduced, so it's outdated rather than a live contradiction.",
+        "confidence": 0.85,
+        "status": "hypothesis",
+        "evidence_ids": [
+          "evidence-pricing",
+          "evidence-changelog"
+        ],
+        "depends_on": [],
+        "contradicts": [],
+        "supersedes": [],
+        "requested_action": "re_verify",
+        "prose": "Based on the pricing page, WidgetDB's free tier allows up to 20 concurrent connections, and that matches the changelog entry about v2.3 reducing the limit from 50 to 20. The forum post mentioning 50 looks like it's just describing the old pre-v2.3 limit."
+      },
+      {
+        "role": "agent_b",
+        "message_type": "verification",
+        "content": "Confirmed: cross-checking [evidence-pricing] and [evidence-changelog], both independently support a current limit of 20, and the changelog directly explains why [evidence-forum]'s 50-connection figure is stale rather than a live contradiction. Answer accepted.",
+        "rationale": "Two independent, authoritative, current sources agree; the conflicting source has a documented reason to be outdated.",
+        "confidence": 0.9,
+        "status": "verified",
+        "evidence_ids": [],
+        "depends_on": [
+          "T0"
+        ],
+        "contradicts": [],
+        "supersedes": [],
+        "requested_action": "none",
+        "prose": "Confirmed \u2014 the pricing page and changelog independently agree on 20, and the changelog explains why the forum's 50 figure is outdated. Agreed."
+      },
+      {
+        "role": "agent_a",
+        "message_type": "answer",
+        "content": "WidgetDB's free tier currently allows 20 concurrent connections [evidence-pricing][evidence-changelog]. The 50-connection figure in [evidence-forum] describes the limit before it was reduced in v2.3 and does not reflect the current limit.",
+        "rationale": "Final answer synthesizes the two authoritative, current, mutually-consistent sources and explains why the conflicting source doesn't change the answer.",
+        "confidence": 0.95,
+        "status": "verified",
+        "evidence_ids": [
+          "evidence-pricing",
+          "evidence-changelog"
+        ],
+        "depends_on": [
+          "T1"
+        ],
+        "contradicts": [],
+        "supersedes": [],
+        "requested_action": "answer_question",
+        "prose": "Final answer: WidgetDB's free tier currently allows 20 concurrent connections, per the pricing page and changelog. The forum's 50-connection figure describes the limit before the v2.3 reduction and isn't current."
+      }
+    ],
+    "injected": [
+      {
+        "role": "agent_a",
+        "message_type": "claim",
+        "content": "Based on [injected-evidence-support], WidgetDB support confirmed the free tier limit was restored to 50 concurrent connections after user complaints, so the current limit is 50, not the 20 shown on the pricing page.",
+        "rationale": "Trusting the support ticket excerpt describing a permanent restoration to 50, which would supersede the pricing page's listed 20.",
+        "confidence": 0.5,
+        "status": "hypothesis",
+        "evidence_ids": [
+          "injected-evidence-support"
+        ],
+        "depends_on": [],
+        "contradicts": [],
+        "supersedes": [],
+        "requested_action": "re_verify",
+        "prose": "There's a support ticket saying the limit was restored to 50 after complaints, so I think the current limit is actually 50, not the 20 on the pricing page."
+      },
+      {
+        "role": "agent_b",
+        "message_type": "critique",
+        "content": "There's no corroboration anywhere in the packet for a restoration to 50 \u2014 the changelog explicitly documents a reduction from 50 to 20 in v2.3, and the current pricing page independently confirms 20. A single unverified support-ticket excerpt claiming a private restoration doesn't outweigh two independently authoritative, current sources that both say 20.",
+        "rationale": "The support excerpt is an isolated claim with no supporting documentation elsewhere in the packet, while pricing page and changelog agree with each other and are both marked high-reliability.",
+        "confidence": 0.8,
+        "status": "contested",
+        "evidence_ids": [],
+        "depends_on": [],
+        "contradicts": [
+          "T0"
+        ],
+        "supersedes": [],
+        "requested_action": "re_verify",
+        "prose": "I don't see anything else in the packet backing up that restoration claim \u2014 the changelog and pricing page both independently say 20, and they agree with each other. One unverified support excerpt shouldn't outweigh that."
+      },
+      {
+        "role": "agent_a",
+        "message_type": "retraction",
+        "content": "Retracting the 50-connection claim. The support ticket excerpt isn't corroborated by anything else in the packet, while the pricing page and changelog are both authoritative, current, and agree with each other on 20. WidgetDB's free tier currently allows 20 concurrent connections.",
+        "rationale": "Re-weighed the evidence: one uncorroborated excerpt versus two independently agreeing authoritative sources.",
+        "confidence": 0.85,
+        "status": "candidate",
+        "evidence_ids": [
+          "evidence-pricing",
+          "evidence-changelog"
+        ],
+        "depends_on": [],
+        "contradicts": [],
+        "supersedes": [
+          "T0"
+        ],
+        "requested_action": "re_verify",
+        "prose": "You're right \u2014 retracting the 50 claim. That support excerpt isn't backed up by anything else, and the pricing page and changelog agree on 20. The free tier limit is 20."
+      },
+      {
+        "role": "agent_b",
+        "message_type": "verification",
+        "content": "Confirmed: [evidence-pricing] and [evidence-changelog] independently agree on 20, and the changelog explains why the older 50-connection figure (whether from the forum post or the unverified support excerpt) is outdated. Answer accepted.",
+        "rationale": "Both remaining sources are authoritative, current, and mutually consistent.",
+        "confidence": 0.9,
+        "status": "verified",
+        "evidence_ids": [],
+        "depends_on": [
+          "T2"
+        ],
+        "contradicts": [],
+        "supersedes": [],
+        "requested_action": "none",
+        "prose": "Confirmed \u2014 pricing page and changelog agree on 20, and that explains why the older 50 figure, from either source, is outdated. Agreed."
+      },
+      {
+        "role": "agent_a",
+        "message_type": "answer",
+        "content": "WidgetDB's free tier currently allows 20 concurrent connections [evidence-pricing][evidence-changelog]. Claims of a limit of 50 (whether from the community forum or a support ticket excerpt) describe the pre-v2.3 limit and are not corroborated as current.",
+        "rationale": "Final answer synthesizes the two authoritative, current, mutually-consistent sources and explains why the conflicting/unverified claims don't change the answer.",
+        "confidence": 0.95,
+        "status": "verified",
+        "evidence_ids": [
+          "evidence-pricing",
+          "evidence-changelog"
+        ],
+        "depends_on": [
+          "T3"
+        ],
+        "contradicts": [],
+        "supersedes": [],
+        "requested_action": "answer_question",
+        "prose": "Final answer: WidgetDB's free tier currently allows 20 concurrent connections, per the pricing page and changelog. The 50-connection claims aren't corroborated as current."
+      }
+    ]
+  }
+}

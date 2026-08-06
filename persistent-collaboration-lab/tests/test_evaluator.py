@@ -68,3 +68,96 @@ def test_bug_diagnosis_missing_scoring_config_scores_zero_without_crashing():
     result = evaluate({"family": "bug_diagnosis"}, "some content")
     assert result["task_score"] == 0.0
     assert "reason" in result
+
+
+def _es_task():
+    from app.experiments.task_loader import load_task
+    return load_task("evidence_synthesis_001")
+
+
+def test_evidence_synthesis_correct_answer_scores_one():
+    task = _es_task()
+    content = "The free tier currently allows 20 concurrent connections [evidence-pricing][evidence-changelog]."
+    result = evaluate(task, content)
+    assert result["task_score"] == 1.0
+
+
+def test_evidence_synthesis_wrong_fact_scores_zero():
+    task = _es_task()
+    content = "The current limit is 50 connections, per the support ticket."
+    result = evaluate(task, content)
+    assert result["task_score"] == 0.0
+    assert result["correct_fact_present"] is False
+
+
+def test_evidence_synthesis_missing_citation_scores_zero():
+    task = _es_task()
+    content = "The free tier allows 20 concurrent connections."  # correct fact, no evidence cited at all
+    result = evaluate(task, content)
+    assert result["task_score"] == 0.0
+    assert result["required_evidence_cited"] is False
+
+
+def test_evidence_synthesis_natural_language_citation_counts_via_keywords():
+    task = _es_task()
+    # No bracketed [evidence-id] — Condition A prose style — but does
+    # reference the pricing page by its citation_keywords entry.
+    content = "The free tier allows 20 concurrent connections, per the pricing page."
+    result = evaluate(task, content)
+    assert result["required_evidence_cited"] is True
+    assert result["task_score"] == 1.0
+
+
+def test_evidence_synthesis_dismissing_the_false_claim_is_not_itself_penalized():
+    task = _es_task()
+    # Correctly explains why "50" is wrong without asserting it as current —
+    # must not trip the forbidden-pattern check just for mentioning it.
+    content = (
+        "The free tier currently allows 20 concurrent connections [evidence-pricing][evidence-changelog]. "
+        "Claims of a limit of 50 describe the pre-v2.3 limit and are not corroborated as current."
+    )
+    result = evaluate(task, content)
+    assert result["forbidden_claims_present"] == []
+    assert result["task_score"] == 1.0
+
+
+def _cp_task():
+    from app.experiments.task_loader import load_task
+    return load_task("constraint_planning_001")
+
+
+def test_constraint_planning_optimal_plan_scores_one():
+    task = _cp_task()
+    content = "Task A: Morning\nTask B: Afternoon\nTask C: Evening"
+    result = evaluate(task, content)
+    assert result["task_score"] == 1.0
+    assert result["hard_constraints_satisfied"] is True
+    assert result["utility_score"] == 1
+
+
+def test_constraint_planning_hard_violation_scores_zero():
+    task = _cp_task()
+    content = "Task A: Evening\nTask B: Afternoon\nTask C: Morning"
+    result = evaluate(task, content)
+    assert result["task_score"] == 0.0
+    assert result["hard_constraints_satisfied"] is False
+    assert len(result["hard_constraint_violations"]) == 2
+
+
+def test_constraint_planning_hard_valid_but_suboptimal_scores_zero_not_partial():
+    task = _cp_task()
+    # A=Afternoon, B=Morning, C=Evening satisfies all hard constraints but
+    # misses the soft preference for A in Morning (utility 0, not 1).
+    content = "Task A: Afternoon\nTask B: Morning\nTask C: Evening"
+    result = evaluate(task, content)
+    assert result["hard_constraints_satisfied"] is True
+    assert result["utility_score"] == 0
+    assert result["task_score"] == 0.0
+
+
+def test_constraint_planning_missing_task_scores_zero():
+    task = _cp_task()
+    content = "Task A: Morning\nTask B: Afternoon"  # C never assigned
+    result = evaluate(task, content)
+    assert result["missing_tasks"] == ["C"]
+    assert result["task_score"] == 0.0
