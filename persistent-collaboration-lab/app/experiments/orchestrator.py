@@ -237,15 +237,39 @@ def run_task(
                     max_message_tokens=budgets["max_tokens_per_message"], max_rationale_tokens=budgets["max_rationale_tokens"],
                     max_final_answer_tokens=budgets["max_final_answer_tokens"],
                 )
-            msg = Message(
-                message_id=message_id, run_id=run_id, task_id=task_id, sender=Sender(role),
-                target=Target.ALL, message_type=msg_type,
-                content=candidate_content, rationale="", confidence=confidence,
-                evidence_ids=evidence_ids, depends_on=depends_on,
-                contradicts=contradicts, supersedes=supersedes,
-                status=msg_status, requested_action=requested_action,
-                created_at=utcnow_iso(),
-            )
+            if not candidate_content or not candidate_content.strip():
+                # A real model can return an empty text block (e.g. it spent
+                # its whole token budget on non-text content and never got
+                # to visible output) — this must fail that one turn, not
+                # crash Message(...)'s min-length validation and take the
+                # whole batch down with it.
+                validation_failure_count += 1
+                store.log_validation_failure(run_id, turn_index, "syntactic", "model returned empty content", True, False)
+                if not repair_attempted:
+                    repair_attempted = True
+                    repair_resp = adapter.generate(
+                        system_prompt, user_prompt + "\n\nYour previous response was empty. Provide your "
+                        "response as plain text — do not return an empty or blank reply.",
+                        max_tokens=max_resp_tokens, temperature=0.0,
+                    )
+                    repair_tokens += repair_resp.prompt_tokens + repair_resp.completion_tokens
+                    repair_cost += repair_resp.cost_usd
+                    candidate_content = repair_resp.text
+                    repair_succeeded = bool(candidate_content and candidate_content.strip())
+                if not candidate_content or not candidate_content.strip():
+                    runtime_validation_error = "model returned empty content on both the original attempt and repair"
+                    store.log_validation_failure(run_id, turn_index, "syntactic", runtime_validation_error, True, False)
+
+            if candidate_content and candidate_content.strip():
+                msg = Message(
+                    message_id=message_id, run_id=run_id, task_id=task_id, sender=Sender(role),
+                    target=Target.ALL, message_type=msg_type,
+                    content=candidate_content, rationale="", confidence=confidence,
+                    evidence_ids=evidence_ids, depends_on=depends_on,
+                    contradicts=contradicts, supersedes=supersedes,
+                    status=msg_status, requested_action=requested_action,
+                    created_at=utcnow_iso(),
+                )
         else:
             outcome = parse_agent_json(response.text, message_id=message_id, run_id=run_id, task_id=task_id, sender=role)
             if not outcome.ok:

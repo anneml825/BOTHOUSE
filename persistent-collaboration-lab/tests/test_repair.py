@@ -59,3 +59,39 @@ def test_failed_repair_is_charged_and_terminates_run(conn, config):
 
     messages = list(conn.execute("SELECT * FROM messages WHERE run_id='run-repair-2'"))
     assert messages == []  # never stored — repair failed, message rejected
+
+
+MINIMAL_TASK_A = {
+    "task_id": "synthetic_repair_test_a",
+    "family": "bug_diagnosis",
+    "name": "repair test (condition A)",
+    "prompt": "test task",
+    "evidence_pool": [],
+    "mock_script": {"clean": [
+        {"role": "agent_a", "message_type": "claim", "status": "hypothesis", "confidence": 0.6},
+    ]},
+}
+
+
+def test_empty_model_response_triggers_repair_and_succeeds(conn, config):
+    # A real model can return an empty text block (e.g. all its token
+    # budget went to non-text content). This must not crash Message(...)'s
+    # min-length validation — one repair attempt, same as any other
+    # malformed output.
+    adapter = MockAdapter(["", "now has real content"])
+    report = run_task(conn, config, MINIMAL_TASK_A, "A", "run-repair-empty-1", seed=1, adapter=adapter)
+
+    failures = list(conn.execute("SELECT * FROM validation_failures WHERE run_id='run-repair-empty-1'"))
+    assert any("empty content" in f["detail"] for f in failures)
+
+    messages = list(conn.execute("SELECT * FROM messages WHERE run_id='run-repair-empty-1'"))
+    assert len(messages) == 1
+    assert messages[0]["content"] == "now has real content"
+
+
+def test_empty_model_response_repair_also_empty_fails_that_run_only(conn, config):
+    adapter = MockAdapter(["", ""])
+    report = run_task(conn, config, MINIMAL_TASK_A, "A", "run-repair-empty-2", seed=1, adapter=adapter)
+    assert report.status == "failed"
+    messages = list(conn.execute("SELECT * FROM messages WHERE run_id='run-repair-empty-2'"))
+    assert messages == []

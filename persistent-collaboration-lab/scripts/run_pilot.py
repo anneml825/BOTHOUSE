@@ -87,6 +87,8 @@ def main() -> None:
             return True
         return False
 
+    errored_runs: list[tuple[str, str]] = []  # (run_id, error message)
+
     print("\n--- Clean runs (30 target: 10 tasks x 3 conditions x seed 1) ---")
     for task_id in task_ids:
         if _over_budget():
@@ -96,7 +98,16 @@ def main() -> None:
             if _over_budget():
                 break
             run_id = f"pilot-{task_id}-{condition}-clean"
-            report = run_task(conn, config, task, condition, run_id, seed=SEED, injection_enabled=False, stage=stage)
+            try:
+                report = run_task(conn, config, task, condition, run_id, seed=SEED, injection_enabled=False, stage=stage)
+            except Exception as e:
+                # One run crashing must not take the other 44 down with it —
+                # whatever tokens/turns that run already spent are still in
+                # the DB (run_task commits as it goes), it's just reported
+                # here as errored rather than scored, and the batch moves on.
+                errored_runs.append((run_id, f"{type(e).__name__}: {e}"))
+                print(f"  {run_id}: ERRORED — {type(e).__name__}: {e}")
+                continue
             clean_run_ids[(task_id, condition)] = run_id
             runs_by_condition[condition].append(run_id)
             running_cost += report.cost_breakdown["total_cost"]
@@ -116,13 +127,18 @@ def main() -> None:
                 break
             clean_id = clean_run_ids.get((task_id, condition))
             if clean_id is None:
-                print(f"  skipping {task_id}/{condition}: no matched clean run (budget stopped before it ran)")
+                print(f"  skipping {task_id}/{condition}: no matched clean run (budget stopped or that run errored)")
                 continue
             run_id = f"pilot-{task_id}-{condition}-injected"
-            report = run_task(
-                conn, config, task, condition, run_id, seed=SEED, injection_enabled=True,
-                matched_clean_run_id=clean_id, stage=stage,
-            )
+            try:
+                report = run_task(
+                    conn, config, task, condition, run_id, seed=SEED, injection_enabled=True,
+                    matched_clean_run_id=clean_id, stage=stage,
+                )
+            except Exception as e:
+                errored_runs.append((run_id, f"{type(e).__name__}: {e}"))
+                print(f"  {run_id}: ERRORED — {type(e).__name__}: {e}")
+                continue
             runs_by_condition[condition].append(run_id)
             matched_pairs[condition].append((clean_id, run_id))
             running_cost += report.cost_breakdown["total_cost"]
@@ -130,6 +146,11 @@ def main() -> None:
             print(f"  {run_id}: status={report.status} score={report.evaluation.get('task_score')} "
                   f"turns_to_correction={cm.get('turns_to_correction')} exposed={cm.get('exposed')} "
                   f"cost=${report.cost_breakdown['total_cost']:.4f} (running total ${running_cost:.4f})")
+
+    if errored_runs:
+        print(f"\n{len(errored_runs)} run(s) errored out and were skipped (not scored):")
+        for run_id, err in errored_runs:
+            print(f"  {run_id}: {err}")
 
     total_runs = sum(len(v) for v in runs_by_condition.values())
     print(f"\nTotal runs: {total_runs} | Total cost: ${running_cost:.4f} (cap: ${max_experiment_cost})")
