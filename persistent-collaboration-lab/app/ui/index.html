@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Persistent Collaboration Lab</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { font-family: -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; padding: 0; background: #0f1115; color: #e6e6e6; }
+  header { padding: 1rem 1.5rem; border-bottom: 1px solid #2a2d34; display: flex; justify-content: space-between; align-items: center; }
+  h1 { font-size: 1.1rem; margin: 0; }
+  main { display: grid; grid-template-columns: 320px 1fr; gap: 0; height: calc(100vh - 58px); }
+  #run-list { overflow-y: auto; border-right: 1px solid #2a2d34; padding: 0.5rem; }
+  #run-detail { overflow-y: auto; padding: 1rem 1.5rem; }
+  .run-item { padding: 0.5rem; border-radius: 6px; cursor: pointer; margin-bottom: 4px; font-size: 0.85rem; }
+  .run-item:hover { background: #1c1f26; }
+  .run-item.active { background: #253048; }
+  .badge { display: inline-block; padding: 1px 6px; border-radius: 10px; font-size: 0.7rem; margin-left: 4px; }
+  .cond-A { background: #3a2d1c; color: #ffb765; }
+  .cond-B { background: #1c2d3a; color: #65b3ff; }
+  .cond-C { background: #1c3a24; color: #6bffa0; }
+  .status-contested { color: #ffb765; }
+  .status-retracted { color: #ff6b6b; }
+  .status-verified { color: #6bffa0; }
+  table { border-collapse: collapse; width: 100%; margin-bottom: 1.5rem; font-size: 0.82rem; }
+  th, td { border: 1px solid #2a2d34; padding: 4px 8px; text-align: left; vertical-align: top; }
+  th { background: #1c1f26; position: sticky; top: 0; }
+  section h2 { font-size: 0.95rem; border-bottom: 1px solid #2a2d34; padding-bottom: 4px; }
+  pre { white-space: pre-wrap; word-break: break-word; background: #1c1f26; padding: 6px; border-radius: 4px; }
+  .toggle { cursor: pointer; user-select: none; }
+  .pill { padding: 2px 8px; border-radius: 10px; background: #1c1f26; cursor: pointer; border: 1px solid #2a2d34; color: #e6e6e6; }
+  .pill.active { background: #253048; }
+  .muted { color: #888; }
+  .tabs { display: flex; gap: 6px; margin-bottom: 1rem; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Persistent Collaboration Lab — Dashboard</h1>
+  <div>
+    <label class="pill"><input type="checkbox" id="admin-toggle" style="vertical-align:middle"> Evaluator / admin mode</label>
+  </div>
+</header>
+<main>
+  <div id="run-list"></div>
+  <div id="run-detail"><p class="muted">Select a run.</p></div>
+</main>
+<script>
+const runListEl = document.getElementById('run-list');
+const detailEl = document.getElementById('run-detail');
+const adminToggle = document.getElementById('admin-toggle');
+let currentRunId = null;
+let currentView = 'overview';
+
+function admin() { return adminToggle.checked ? 1 : 0; }
+
+async function loadRuns() {
+  const res = await fetch(`/api/runs?admin=${admin()}`);
+  const runs = await res.json();
+  runListEl.innerHTML = '';
+  for (const r of runs) {
+    const div = document.createElement('div');
+    div.className = 'run-item' + (r.run_id === currentRunId ? ' active' : '');
+    div.innerHTML = `<div>${r.task_id}<span class="badge cond-${r.condition}">${r.condition}</span></div>
+      <div class="muted">${r.stage} · ${r.status}</div>`;
+    div.onclick = () => selectRun(r.run_id);
+    runListEl.appendChild(div);
+  }
+}
+
+function esc(s) { return (s ?? '').toString().replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+
+function table(rows, cols) {
+  if (!rows.length) return '<p class="muted">none</p>';
+  let html = '<table><thead><tr>' + cols.map(c => `<th>${c}</th>`).join('') + '</tr></thead><tbody>';
+  for (const row of rows) {
+    html += '<tr>' + cols.map(c => `<td>${esc(typeof row[c] === 'object' ? JSON.stringify(row[c]) : row[c])}</td>`).join('') + '</tr>';
+  }
+  return html + '</tbody></table>';
+}
+
+async function selectRun(runId) {
+  currentRunId = runId;
+  await loadRuns();
+  const res = await fetch(`/api/runs/${runId}?admin=${admin()}`);
+  const d = await res.json();
+  renderDetail(d);
+}
+
+function renderDetail(d) {
+  const r = d.run;
+  let html = `<div class="tabs">
+      <button class="pill toggle" data-tab="overview">Overview</button>
+      <button class="pill toggle" data-tab="messages">Messages</button>
+      <button class="pill toggle" data-tab="claims">Claims &amp; Status</button>
+      <button class="pill toggle" data-tab="audit">Audit mode</button>
+    </div>`;
+  html += `<section id="tab-overview">
+    <h2>Run ${r.run_id}</h2>
+    <p>Task: <b>${r.task_id}</b> · Condition <b>${r.condition}</b> · Stage <b>${r.stage}</b> · Status <b>${r.status}</b></p>
+    <p>Replay check: <b>${d.replay_check.matches ? 'MATCHES live state' : 'MISMATCH: ' + JSON.stringify(d.replay_check.mismatches)}</b></p>
+    <h2>Evaluation</h2>
+    ${table(d.evaluations, ['evaluation_id', 'task_score', 'objective_score', 'model_judge_score', 'details_json'])}
+    <h2>Validation failures</h2>
+    ${table(d.validation_failures, ['turn_index', 'failure_type', 'detail', 'repair_attempted', 'repair_succeeded'])}
+    <h2>Context / budget log</h2>
+    ${table(d.context_log, ['turn_index', 'condition', 'history_tokens_available', 'history_tokens_included', 'history_tokens_omitted', 'state_items_retrieved', 'retrieved_token_count'])}
+    <h2>Evidence${d.injected_false_evidence.length ? ' <span class="badge status-retracted">INJECTED PRESENT (admin)</span>' : ''}</h2>
+    ${table(d.evidence, ['evidence_id', 'source_type', 'content', 'provenance', 'reliability'])}
+    ${d.injected_false_evidence.length ? '<h3>Injected false evidence (admin only)</h3>' + table(d.injected_false_evidence, ['evidence_id', 'injection_type', 'ground_truth']) : ''}
+  </section>
+  <section id="tab-messages" style="display:none">
+    <h2>Messages (raw + structured)</h2>
+    ${table(d.messages, ['turn_index', 'sender', 'message_type', 'status', 'confidence', 'content', 'rationale', 'is_prose'])}
+    <h2>Raw model outputs</h2>
+    ${table(d.raw_outputs, ['turn_index', 'agent_role', 'prompt_tokens', 'completion_tokens', 'schema_validation_passed', 'repair_attempted', 'repair_succeeded'])}
+  </section>
+  <section id="tab-claims" style="display:none">
+    <h2>Claims</h2>
+    ${table(d.claims, ['claim_id', 'content', 'status', 'confidence', 'dependency_warning', 'superseded_by'])}
+    <h2>Dependencies</h2>
+    ${table(d.dependencies, ['claim_id', 'depends_on_claim_id'])}
+    <h2>Contradictions</h2>
+    ${table(d.contradictions, ['claim_id', 'contradicts_claim_id'])}
+    <h2>Status history (propagation trail)</h2>
+    ${table(d.status_history, ['seq', 'entity_id', 'old_status', 'new_status', 'new_dependency_warning', 'reason', 'caused_by_dependency_id'])}
+    <h2>Open questions</h2>
+    ${table(d.questions, ['content', 'status'])}
+    <h2>Decisions</h2>
+    ${table(d.decisions, ['content'])}
+  </section>
+  <section id="tab-audit" style="display:none"><p class="muted">Loading…</p></section>`;
+  detailEl.innerHTML = html;
+
+  detailEl.querySelectorAll('.toggle').forEach(btn => {
+    btn.onclick = () => {
+      detailEl.querySelectorAll('section').forEach(s => s.style.display = 'none');
+      detailEl.querySelector('#tab-' + btn.dataset.tab).style.display = 'block';
+      if (btn.dataset.tab === 'audit') loadAudit(r.run_id);
+    };
+  });
+}
+
+async function loadAudit(runId) {
+  const res = await fetch(`/api/runs/${runId}/audit`);
+  const steps = await res.json();
+  let html = '<h2>Turn-by-turn audit</h2>';
+  for (const step of steps) {
+    const m = step.message;
+    html += `<div style="border-left:3px solid #2a2d34;padding-left:10px;margin-bottom:12px">
+      <b>Turn ${m.turn_index} — ${m.sender} — ${m.message_type} (${m.status})</b>
+      <pre>${esc(m.content)}</pre>
+      ${step.caused_events.length ? '<div class="muted">Caused: ' + step.caused_events.map(e => `${e.entity_id}: ${e.old_status}→${e.new_status} (${e.reason})`).join('; ') + '</div>' : ''}
+    </div>`;
+  }
+  document.getElementById('tab-audit').innerHTML = html;
+}
+
+adminToggle.onchange = () => { if (currentRunId) selectRun(currentRunId); else loadRuns(); };
+loadRuns();
+</script>
+</body>
+</html>

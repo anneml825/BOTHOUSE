@@ -1,0 +1,17 @@
+# Cost controls (§10) and message caps (§9). Applied identically across
+# conditions A, B, C.
+
+max_turns_per_run: 8
+max_total_tokens_per_run: 30000
+max_run_cost_usd: 1.00
+max_experiment_cost_usd: 20.00
+
+# Reserved for system instructions + task input + current message + response
+# generation. What's left of max_total_tokens_per_run's per-turn share goes
+# to history/retrieval — see app/runtime/context.py.
+reserved_tokens_per_turn: 1500
+history_token_budget_per_turn: 3000
+
+max_tokens_per_message: 2000
+max_rationale_tokens: 1200
+max_final_answer_tokens: 2500

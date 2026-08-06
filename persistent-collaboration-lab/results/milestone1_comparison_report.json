@@ -1,0 +1,124 @@
+{
+  "stage": "plumbing_only",
+  "label": "milestone1_required_demonstration",
+  "conditions": {
+    "A": {
+      "condition": "A",
+      "n_runs": 2,
+      "mean_task_score": 1.0,
+      "median_task_score": 1.0,
+      "sd_task_score": 0.0,
+      "mean_tokens": 2764.5,
+      "mean_cost_usd": 0.0,
+      "accuracy_per_1000_tokens": 0.36172906493036716,
+      "cost_per_successful_task": 0.0,
+      "schema_failure_rate": 0.0,
+      "mean_turns_to_correction": null,
+      "mean_downstream_contamination": null
+    },
+    "B": {
+      "condition": "B",
+      "n_runs": 2,
+      "mean_task_score": 1.0,
+      "median_task_score": 1.0,
+      "sd_task_score": 0.0,
+      "mean_tokens": 6055.0,
+      "mean_cost_usd": 0.0,
+      "accuracy_per_1000_tokens": 0.16515276630883569,
+      "cost_per_successful_task": 0.0,
+      "schema_failure_rate": 0.0,
+      "mean_turns_to_correction": null,
+      "mean_downstream_contamination": null
+    },
+    "C": {
+      "condition": "C",
+      "n_runs": 2,
+      "mean_task_score": 1.0,
+      "median_task_score": 1.0,
+      "sd_task_score": 0.0,
+      "mean_tokens": 5494.5,
+      "mean_cost_usd": 0.0,
+      "accuracy_per_1000_tokens": 0.18200018200018198,
+      "cost_per_successful_task": 0.0,
+      "schema_failure_rate": 0.0,
+      "mean_turns_to_correction": null,
+      "mean_downstream_contamination": null
+    }
+  },
+  "paired_contamination": {
+    "A": [
+      {
+        "clean_run_id": "milestone1-A-clean",
+        "injected_run_id": "milestone1-A-injected",
+        "clean_score": 1.0,
+        "injected_score": 1.0,
+        "delta": 0.0
+      }
+    ],
+    "B": [
+      {
+        "clean_run_id": "milestone1-B-clean",
+        "injected_run_id": "milestone1-B-injected",
+        "clean_score": 1.0,
+        "injected_score": 1.0,
+        "delta": 0.0
+      }
+    ],
+    "C": [
+      {
+        "clean_run_id": "milestone1-C-clean",
+        "injected_run_id": "milestone1-C-injected",
+        "clean_score": 1.0,
+        "injected_score": 1.0,
+        "delta": 0.0
+      }
+    ]
+  },
+  "notes": [
+    "Pilot-scale report: means/medians only, no significance testing (see README limitations).",
+    "Labeled stage=plumbing_only \u2014 only 'experimental_pilot' results should ever inform the research hypothesis."
+  ],
+  "per_condition_correction_metrics": {
+    "A": {
+      "exposed": true,
+      "turns_to_detection": 1,
+      "turns_to_challenge": 1,
+      "turns_to_correction": 2,
+      "tokens_to_detection": 1382,
+      "tokens_to_challenge": 1382,
+      "tokens_to_correction": 2018,
+      "downstream_contamination_count": 0,
+      "dependent_claims_affected": 0,
+      "correction_success_rate": 1.0
+    },
+    "B": {
+      "exposed": true,
+      "turns_to_detection": 1,
+      "turns_to_challenge": 1,
+      "turns_to_correction": 2,
+      "tokens_to_detection": 2722,
+      "tokens_to_challenge": 2722,
+      "tokens_to_correction": 4298,
+      "downstream_contamination_count": 0,
+      "dependent_claims_affected": 0,
+      "correction_success_rate": 1.0
+    },
+    "C": {
+      "exposed": true,
+      "turns_to_detection": 1,
+      "turns_to_challenge": 1,
+      "turns_to_correction": 2,
+      "tokens_to_detection": 2695,
+      "tokens_to_challenge": 2695,
+      "tokens_to_correction": 4092,
+      "downstream_contamination_count": 0,
+      "dependent_claims_affected": 0,
+      "correction_success_rate": 1.0
+    }
+  },
+  "per_condition_validation_failures": {
+    "A": 0,
+    "B": 0,
+    "C": 0
+  }
+}

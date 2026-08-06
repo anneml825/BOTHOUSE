@@ -1,0 +1,146 @@
+{
+  "$defs": {
+    "MessageType": {
+      "enum": [
+        "claim",
+        "question",
+        "answer",
+        "critique",
+        "evidence",
+        "decision",
+        "retraction",
+        "verification"
+      ],
+      "title": "MessageType",
+      "type": "string"
+    },
+    "Sender": {
+      "enum": [
+        "agent_a",
+        "agent_b"
+      ],
+      "title": "Sender",
+      "type": "string"
+    },
+    "Status": {
+      "enum": [
+        "hypothesis",
+        "candidate",
+        "supported",
+        "contested",
+        "retracted",
+        "verified"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "Target": {
+      "enum": [
+        "agent_a",
+        "agent_b",
+        "runtime",
+        "all"
+      ],
+      "title": "Target",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "The wire format exchanged between Agent A (Solver) and Agent B (Critic).",
+  "properties": {
+    "message_id": {
+      "title": "Message Id",
+      "type": "string"
+    },
+    "run_id": {
+      "title": "Run Id",
+      "type": "string"
+    },
+    "task_id": {
+      "title": "Task Id",
+      "type": "string"
+    },
+    "sender": {
+      "$ref": "#/$defs/Sender"
+    },
+    "target": {
+      "$ref": "#/$defs/Target"
+    },
+    "message_type": {
+      "$ref": "#/$defs/MessageType"
+    },
+    "content": {
+      "minLength": 1,
+      "title": "Content",
+      "type": "string"
+    },
+    "rationale": {
+      "default": "",
+      "title": "Rationale",
+      "type": "string"
+    },
+    "confidence": {
+      "title": "Confidence",
+      "type": "number"
+    },
+    "evidence_ids": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Evidence Ids",
+      "type": "array"
+    },
+    "depends_on": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Depends On",
+      "type": "array"
+    },
+    "contradicts": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Contradicts",
+      "type": "array"
+    },
+    "supersedes": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Supersedes",
+      "type": "array"
+    },
+    "status": {
+      "$ref": "#/$defs/Status"
+    },
+    "requested_action": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Requested Action"
+    },
+    "created_at": {
+      "title": "Created At",
+      "type": "string"
+    }
+  },
+  "required": [
+    "run_id",
+    "task_id",
+    "sender",
+    "target",
+    "message_type",
+    "content",
+    "confidence",
+    "status"
+  ],
+  "title": "Message",
+  "type": "object"
+}

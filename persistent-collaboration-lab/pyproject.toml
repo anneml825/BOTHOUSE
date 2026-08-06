@@ -1,0 +1,33 @@
+[project]
+name = "persistent-collaboration-lab"
+version = "0.1.0"
+description = "Experimental prototype comparing transcript-only, structured-only, and structured+persistent-state collaboration between two AI agents."
+requires-python = ">=3.11"
+readme = "README.md"
+dependencies = [
+    "pydantic>=2.6,<3",
+    "fastapi>=0.110,<1",
+    "uvicorn>=0.29,<1",
+    "PyYAML>=6.0,<7",
+    "jinja2>=3.1,<4",
+    "python-dotenv>=1.0,<2",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0,<9",
+    "pytest-cov>=5.0,<6",
+]
+openai = ["openai>=1.30,<2"]
+anthropic = ["anthropic>=0.34,<1"]
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

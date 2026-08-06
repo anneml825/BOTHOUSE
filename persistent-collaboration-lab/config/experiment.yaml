@@ -1,0 +1,13 @@
+# Experiment-level configuration snapshot. Copied verbatim into each run's
+# config_snapshot for reproducibility (§17).
+
+stage: plumbing_only  # plumbing_only | smoke_test | experimental_pilot
+conditions: [A, B, C]
+seed: 1234
+temperature: 0.0
+stopping_rules:
+  - final_decision_message
+  - evaluator_confirmation
+  - turn_limit
+  - failure
+db_path: results/lab.sqlite3

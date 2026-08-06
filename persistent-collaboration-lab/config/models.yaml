@@ -1,0 +1,30 @@
+# Model configuration. Never hardcode model names in code — everything
+# reads from here. Pricing is $ per 1,000 tokens; 0 for mock.
+adapters:
+  mock:
+    provider: mock
+    model_name: mock-deterministic-v1
+    input_rate_per_1k: 0.0
+    output_rate_per_1k: 0.0
+
+  openai_smoke:
+    provider: openai
+    model_name: gpt-4o-mini
+    input_rate_per_1k: 0.00015
+    output_rate_per_1k: 0.0006
+
+  anthropic_smoke:
+    provider: anthropic
+    model_name: claude-haiku-4-5-20251001
+    input_rate_per_1k: 0.001
+    output_rate_per_1k: 0.005
+
+  anthropic_pilot:
+    provider: anthropic
+    model_name: claude-sonnet-5
+    input_rate_per_1k: 0.003
+    output_rate_per_1k: 0.015
+
+# Which adapter config each agent role uses for a given run. Identical
+# across conditions A/B/C — model/provider must never differ by condition.
+active_adapter: mock
