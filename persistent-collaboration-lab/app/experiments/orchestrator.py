@@ -167,11 +167,37 @@ def run_task(
         msg: Optional[Message] = None
 
         if condition == "A":
-            turn_spec = task_definition["mock_script"][variant][turn_index]
-            resolved = resolve_refs(turn_spec, refs)
+            # Bookkeeping fields (message_type/status/confidence/relations) are
+            # only ever pulled from the task's scripted annotation when we're
+            # actually replaying that script (MockAdapter) — that's a
+            # plumbing_only/mock convenience, not something a real model
+            # produces (see DESIGN_HISTORY.md). With a real adapter, Condition
+            # A gets none of that structure — by design, that's the whole
+            # point of the transcript-only condition — so we fall back to
+            # neutral defaults and use "last scripted turn = the decision
+            # turn" as the only structural fact we still rely on, since turn
+            # count/role order is fixed by the task regardless of adapter.
+            is_scripted = isinstance(adapter, MockAdapter)
+            if is_scripted:
+                turn_spec = task_definition["mock_script"][variant][turn_index]
+                resolved = resolve_refs(turn_spec, refs)
+                msg_type = MessageType(turn_spec["message_type"])
+                msg_status = Status(turn_spec["status"])
+                confidence = turn_spec["confidence"]
+                evidence_ids = turn_spec.get("evidence_ids", [])
+                depends_on, contradicts, supersedes = resolved["depends_on"], resolved["contradicts"], resolved["supersedes"]
+                requested_action = turn_spec.get("requested_action")
+            else:
+                is_final_turn = turn_index == len(roles) - 1
+                msg_type = MessageType.DECISION if is_final_turn else MessageType.CLAIM
+                msg_status = Status.CANDIDATE if is_final_turn else Status.HYPOTHESIS
+                confidence = 0.5  # unknown — Condition A carries no self-declared confidence signal
+                evidence_ids, depends_on, contradicts, supersedes = [], [], [], []
+                requested_action = "apply_fix" if is_final_turn else None
+
             candidate_content = response.text
             overlength = check_overlength(
-                candidate_content, "", message_type=MessageType(turn_spec["message_type"]),
+                candidate_content, "", message_type=msg_type,
                 max_message_tokens=budgets["max_tokens_per_message"], max_rationale_tokens=budgets["max_rationale_tokens"],
                 max_final_answer_tokens=budgets["max_final_answer_tokens"],
             )
@@ -187,14 +213,18 @@ def run_task(
                 repair_tokens = repair_resp.prompt_tokens + repair_resp.completion_tokens
                 repair_cost += repair_resp.cost_usd
                 candidate_content = repair_resp.text
-                repair_succeeded = True  # mock scenarios are always within cap; real runs may still fail
+                repair_succeeded = not check_overlength(
+                    candidate_content, "", message_type=msg_type,
+                    max_message_tokens=budgets["max_tokens_per_message"], max_rationale_tokens=budgets["max_rationale_tokens"],
+                    max_final_answer_tokens=budgets["max_final_answer_tokens"],
+                )
             msg = Message(
                 message_id=message_id, run_id=run_id, task_id=task_id, sender=Sender(role),
-                target=Target.ALL, message_type=MessageType(turn_spec["message_type"]),
-                content=candidate_content, rationale="", confidence=turn_spec["confidence"],
-                evidence_ids=turn_spec.get("evidence_ids", []), depends_on=resolved["depends_on"],
-                contradicts=resolved["contradicts"], supersedes=resolved["supersedes"],
-                status=Status(turn_spec["status"]), requested_action=turn_spec.get("requested_action"),
+                target=Target.ALL, message_type=msg_type,
+                content=candidate_content, rationale="", confidence=confidence,
+                evidence_ids=evidence_ids, depends_on=depends_on,
+                contradicts=contradicts, supersedes=supersedes,
+                status=msg_status, requested_action=requested_action,
                 created_at=utcnow_iso(),
             )
         else:
