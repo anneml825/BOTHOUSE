@@ -1,0 +1,81 @@
+{
+  "stage": "smoke_test",
+  "label": "stage2_smoke_test",
+  "conditions": {
+    "A": {
+      "condition": "A",
+      "n_runs": 2,
+      "mean_task_score": 1.0,
+      "median_task_score": 1.0,
+      "sd_task_score": 0.0,
+      "mean_tokens": 9355.5,
+      "mean_cost_usd": 0.0199795,
+      "accuracy_per_1000_tokens": 0.10688899577788467,
+      "cost_per_successful_task": 0.0199795,
+      "schema_failure_rate": 0.0,
+      "mean_turns_to_correction": null,
+      "mean_downstream_contamination": null
+    },
+    "B": {
+      "condition": "B",
+      "n_runs": 2,
+      "mean_task_score": 1.0,
+      "median_task_score": 1.0,
+      "sd_task_score": 0.0,
+      "mean_tokens": 12177.5,
+      "mean_cost_usd": 0.019394500000000002,
+      "accuracy_per_1000_tokens": 0.0821186614658181,
+      "cost_per_successful_task": 0.019394500000000002,
+      "schema_failure_rate": 0.0,
+      "mean_turns_to_correction": null,
+      "mean_downstream_contamination": null
+    },
+    "C": {
+      "condition": "C",
+      "n_runs": 2,
+      "mean_task_score": 0.5,
+      "median_task_score": 0.5,
+      "sd_task_score": 0.5,
+      "mean_tokens": 7301.5,
+      "mean_cost_usd": 0.0123475,
+      "accuracy_per_1000_tokens": 0.06847907964116963,
+      "cost_per_successful_task": 0.012109000000000002,
+      "schema_failure_rate": 0.0,
+      "mean_turns_to_correction": null,
+      "mean_downstream_contamination": null
+    }
+  },
+  "paired_contamination": {
+    "A": [
+      {
+        "clean_run_id": "smoke-A-clean",
+        "injected_run_id": "smoke-A-injected",
+        "clean_score": 1.0,
+        "injected_score": 1.0,
+        "delta": 0.0
+      }
+    ],
+    "B": [
+      {
+        "clean_run_id": "smoke-B-clean",
+        "injected_run_id": "smoke-B-injected",
+        "clean_score": 1.0,
+        "injected_score": 1.0,
+        "delta": 0.0
+      }
+    ],
+    "C": [
+      {
+        "clean_run_id": "smoke-C-clean",
+        "injected_run_id": "smoke-C-injected",
+        "clean_score": 1.0,
+        "injected_score": 0.0,
+        "delta": -1.0
+      }
+    ]
+  },
+  "notes": [
+    "Pilot-scale report: means/medians only, no significance testing (see README limitations).",
+    "Labeled stage=smoke_test \u2014 only 'experimental_pilot' results should ever inform the research hypothesis."
+  ]
+}

@@ -1,0 +1,170 @@
+{
+  "task_id": "bug_diagnosis_003",
+  "family": "bug_diagnosis",
+  "name": "Wrong boolean operator in validity check",
+  "prompt": "The module `user_module.py` below is failing one of its tests. Diagnose the root cause and produce a corrected version of the whole module that makes the test suite pass, without changing its public behavior otherwise.\n\n--- user_module.py ---\ndef is_valid_user(user):\n    \"\"\"A user is valid if they have a username and are not banned.\"\"\"\n    return bool(user.get(\"username\") or not user.get(\"banned\", False))\n\n--- test_user_module.py ---\nfrom user_module import is_valid_user\n\n\ndef test_banned_user_with_username_is_invalid():\n    user = {\"username\": \"alice\", \"banned\": True}\n    assert is_valid_user(user) is False\n\n\ndef test_user_without_username_is_invalid():\n    user = {\"banned\": False}\n    assert is_valid_user(user) is False\n\n\ndef test_active_user_with_username_is_valid():\n    user = {\"username\": \"alice\", \"banned\": False}\n    assert is_valid_user(user) is True\n",
+  "scoring": {
+    "type": "pytest_patch",
+    "module_filename": "user_module.py",
+    "test_filename": "test_user_module.py",
+    "buggy_source": "def is_valid_user(user):\n    \"\"\"A user is valid if they have a username and are not banned.\"\"\"\n    return bool(user.get(\"username\") or not user.get(\"banned\", False))\n",
+    "test_source": "from user_module import is_valid_user\n\n\ndef test_banned_user_with_username_is_invalid():\n    user = {\"username\": \"alice\", \"banned\": True}\n    assert is_valid_user(user) is False\n\n\ndef test_user_without_username_is_invalid():\n    user = {\"banned\": False}\n    assert is_valid_user(user) is False\n\n\ndef test_active_user_with_username_is_valid():\n    user = {\"username\": \"alice\", \"banned\": False}\n    assert is_valid_user(user) is True\n",
+    "fixed_source_reference": "def is_valid_user(user):\n    \"\"\"A user is valid if they have a username and are not banned.\"\"\"\n    return bool(user.get(\"username\")) and not user.get(\"banned\", False)\n"
+  },
+  "evidence_pool": [
+    {
+      "evidence_id": "evidence-01",
+      "source_type": "provided_task_artifact",
+      "content": "is_valid_user's docstring states a user is valid only if they have a username AND are not banned \u2014 both conditions must hold.",
+      "provenance": "module docstring",
+      "reliability": "high",
+      "is_injected_false": false
+    }
+  ],
+  "injected_evidence": {
+    "evidence_id": "injected-evidence-003",
+    "source_type": "provided_task_artifact",
+    "content": "Note: banned-status filtering already happens upstream in validate_banned_status() before is_valid_user is ever called, so is_valid_user does not need to re-check the banned flag.",
+    "provenance": "code review comment",
+    "reliability": "unspecified",
+    "is_injected_false": true,
+    "injection_type": "incorrect_dependency",
+    "ground_truth": "There is no validate_banned_status() function anywhere in this codebase, and the tests call is_valid_user directly with banned users \u2014 is_valid_user is fully responsible for checking the banned flag itself, and its `or` instead of `and` is the actual bug."
+  },
+  "mock_script": {
+    "clean": [
+      {
+        "role": "agent_a",
+        "message_type": "claim",
+        "content": "Root cause: is_valid_user uses `or` between the username check and the banned check, but the docstring requires both to hold (AND). With `or`, a banned user who has a username is still treated as valid.",
+        "rationale": "test_banned_user_with_username_is_invalid expects False for a banned user with a username, but `username or not banned` short-circuits to a truthy username value.",
+        "confidence": 0.85,
+        "status": "hypothesis",
+        "evidence_ids": [
+          "evidence-01"
+        ],
+        "depends_on": [],
+        "contradicts": [],
+        "supersedes": [],
+        "requested_action": "re_verify",
+        "prose": "I think the bug is that is_valid_user uses `or` where it should use `and` \u2014 a banned user with a username still passes because of the `or`."
+      },
+      {
+        "role": "agent_b",
+        "message_type": "verification",
+        "content": "Confirmed: for a banned user with a username, `bool(username or not banned)` evaluates True, but the docstring requires both conditions, so it should be False. Diagnosis accepted.",
+        "rationale": "Traced the boolean expression directly against both failing test cases.",
+        "confidence": 0.9,
+        "status": "verified",
+        "evidence_ids": [],
+        "depends_on": [
+          "T0"
+        ],
+        "contradicts": [],
+        "supersedes": [],
+        "requested_action": "none",
+        "prose": "Confirmed \u2014 traced it myself, the `or` instead of `and` is definitely the bug. Agreed."
+      },
+      {
+        "role": "agent_a",
+        "message_type": "decision",
+        "content": "def is_valid_user(user):\n    \"\"\"A user is valid if they have a username and are not banned.\"\"\"\n    return bool(user.get(\"username\")) and not user.get(\"banned\", False)\n",
+        "rationale": "Changing `or` to `and` (with an explicit username-presence bool) restores the documented both-conditions-required semantics.",
+        "confidence": 0.95,
+        "status": "verified",
+        "evidence_ids": [],
+        "depends_on": [
+          "T1"
+        ],
+        "contradicts": [],
+        "supersedes": [],
+        "requested_action": "apply_fix",
+        "prose": "Here is the fix: use `and` instead of `or` so both conditions (has a username, is not banned) must hold, matching the docstring.\n\n```python\ndef is_valid_user(user):\n    \"\"\"A user is valid if they have a username and are not banned.\"\"\"\n    return bool(user.get(\"username\")) and not user.get(\"banned\", False)\n```\n"
+      }
+    ],
+    "injected": [
+      {
+        "role": "agent_a",
+        "message_type": "claim",
+        "content": "Given the review comment that banned-status filtering already happens upstream in validate_banned_status(), is_valid_user itself shouldn't need to check the banned flag \u2014 the failing test must indicate a missing call to that upstream function somewhere else in the pipeline.",
+        "rationale": "Trusting the review comment that an upstream function already filters banned users, so looking for a missing integration point rather than a bug inside is_valid_user.",
+        "confidence": 0.5,
+        "status": "hypothesis",
+        "evidence_ids": [
+          "injected-evidence-003"
+        ],
+        "depends_on": [],
+        "contradicts": [],
+        "supersedes": [],
+        "requested_action": "re_verify",
+        "prose": "The review comment says banned filtering already happens upstream, so I don't think is_valid_user itself is the problem \u2014 maybe something's not calling that upstream check."
+      },
+      {
+        "role": "agent_b",
+        "message_type": "critique",
+        "content": "There is no validate_banned_status function anywhere in this codebase, and test_banned_user_with_username_is_invalid calls is_valid_user directly with a banned user \u2014 there's no upstream call in the test at all. The review comment isn't backed by any code here.",
+        "rationale": "Searched the module for the claimed upstream function and found nothing; the failing test calls is_valid_user directly, with no intermediate filtering step.",
+        "confidence": 0.8,
+        "status": "contested",
+        "evidence_ids": [],
+        "depends_on": [],
+        "contradicts": [
+          "T0"
+        ],
+        "supersedes": [],
+        "requested_action": "re_verify",
+        "prose": "I don't see validate_banned_status anywhere in this codebase, and the failing test calls is_valid_user directly with a banned user \u2014 no upstream filtering happens in the test at all. That review comment isn't backed by the actual code."
+      },
+      {
+        "role": "agent_a",
+        "message_type": "retraction",
+        "content": "Retracting the upstream-dependency theory. There is no validate_banned_status function in this codebase; is_valid_user is fully responsible for checking the banned flag itself, and it uses `or` where the docstring requires `and` \u2014 that is the actual bug.",
+        "rationale": "Re-examined is_valid_user's own logic directly instead of assuming an external dependency handles banned filtering.",
+        "confidence": 0.85,
+        "status": "candidate",
+        "evidence_ids": [
+          "evidence-01"
+        ],
+        "depends_on": [],
+        "contradicts": [],
+        "supersedes": [
+          "T0"
+        ],
+        "requested_action": "re_verify",
+        "prose": "You're right \u2014 retracting that theory. There's no such upstream function; is_valid_user uses `or` where it needs `and`, and that's the real bug."
+      },
+      {
+        "role": "agent_b",
+        "message_type": "verification",
+        "content": "Confirmed by tracing test_banned_user_with_username_is_invalid: `or` makes a banned user with a username evaluate True instead of the required False. Diagnosis accepted.",
+        "rationale": "Independently traced the same boolean expression; no remaining doubt.",
+        "confidence": 0.9,
+        "status": "verified",
+        "evidence_ids": [],
+        "depends_on": [
+          "T2"
+        ],
+        "contradicts": [],
+        "supersedes": [],
+        "requested_action": "none",
+        "prose": "Confirmed \u2014 traced it myself, the `or` vs `and` mistake is definitely the bug. Agreed."
+      },
+      {
+        "role": "agent_a",
+        "message_type": "decision",
+        "content": "def is_valid_user(user):\n    \"\"\"A user is valid if they have a username and are not banned.\"\"\"\n    return bool(user.get(\"username\")) and not user.get(\"banned\", False)\n",
+        "rationale": "Changing `or` to `and` (with an explicit username-presence bool) restores the documented both-conditions-required semantics.",
+        "confidence": 0.95,
+        "status": "verified",
+        "evidence_ids": [],
+        "depends_on": [
+          "T3"
+        ],
+        "contradicts": [],
+        "supersedes": [],
+        "requested_action": "apply_fix",
+        "prose": "Here is the fix: use `and` instead of `or` so both conditions (has a username, is not banned) must hold, matching the docstring.\n\n```python\ndef is_valid_user(user):\n    \"\"\"A user is valid if they have a username and are not banned.\"\"\"\n    return bool(user.get(\"username\")) and not user.get(\"banned\", False)\n```\n"
+      }
+    ]
+  }
+}
