@@ -70,24 +70,50 @@ def main() -> None:
     matched_pairs: dict[str, list[tuple[str, str]]] = {c: [] for c in CONDITIONS}
     clean_run_ids: dict[tuple[str, str], str] = {}  # (task_id, condition) -> run_id
 
+    max_experiment_cost = config.budgets["max_experiment_cost_usd"]
+    running_cost = 0.0
+    budget_exhausted = False
+
+    def _over_budget() -> bool:
+        nonlocal budget_exhausted
+        if running_cost >= max_experiment_cost:
+            if not budget_exhausted:
+                print(f"\n!! EXPERIMENT COST CAP REACHED (${running_cost:.4f} >= ${max_experiment_cost}) — stopping further runs.")
+            budget_exhausted = True
+            return True
+        return False
+
     print("\n--- Clean runs (30 target: 10 tasks x 3 conditions x seed 1) ---")
     for task_id in task_ids:
+        if _over_budget():
+            break
         task = load_task(task_id)
         for condition in CONDITIONS:
+            if _over_budget():
+                break
             run_id = f"pilot-{task_id}-{condition}-clean"
             report = run_task(conn, config, task, condition, run_id, seed=SEED, injection_enabled=False, stage=stage)
             clean_run_ids[(task_id, condition)] = run_id
             runs_by_condition[condition].append(run_id)
-            print(f"  {run_id}: status={report.status} score={report.evaluation.get('task_score')}")
+            running_cost += report.cost_breakdown["total_cost"]
+            print(f"  {run_id}: status={report.status} score={report.evaluation.get('task_score')} "
+                  f"cost=${report.cost_breakdown['total_cost']:.4f} (running total ${running_cost:.4f})")
 
     print(f"\n--- Injected runs ({len(INJECTED_SUBSET)} tasks x 3 conditions = {len(INJECTED_SUBSET) * 3} target) ---")
     for task_id in INJECTED_SUBSET:
+        if _over_budget():
+            break
         if task_id not in task_ids:
             print(f"  skipping {task_id}: not found among discovered tasks")
             continue
         task = load_task(task_id)
         for condition in CONDITIONS:
-            clean_id = clean_run_ids[(task_id, condition)]
+            if _over_budget():
+                break
+            clean_id = clean_run_ids.get((task_id, condition))
+            if clean_id is None:
+                print(f"  skipping {task_id}/{condition}: no matched clean run (budget stopped before it ran)")
+                continue
             run_id = f"pilot-{task_id}-{condition}-injected"
             report = run_task(
                 conn, config, task, condition, run_id, seed=SEED, injection_enabled=True,
@@ -95,12 +121,16 @@ def main() -> None:
             )
             runs_by_condition[condition].append(run_id)
             matched_pairs[condition].append((clean_id, run_id))
+            running_cost += report.cost_breakdown["total_cost"]
             cm = report.correction_metrics
             print(f"  {run_id}: status={report.status} score={report.evaluation.get('task_score')} "
-                  f"turns_to_correction={cm.get('turns_to_correction')} exposed={cm.get('exposed')}")
+                  f"turns_to_correction={cm.get('turns_to_correction')} exposed={cm.get('exposed')} "
+                  f"cost=${report.cost_breakdown['total_cost']:.4f} (running total ${running_cost:.4f})")
 
     total_runs = sum(len(v) for v in runs_by_condition.values())
-    print(f"\nTotal runs: {total_runs}")
+    print(f"\nTotal runs: {total_runs} | Total cost: ${running_cost:.4f} (cap: ${max_experiment_cost})")
+    if budget_exhausted:
+        print("NOTE: experiment cost cap was reached before all planned runs completed — report below covers only what ran.")
 
     print("\n--- Replay determinism check (Condition C) ---")
     all_ok = True
