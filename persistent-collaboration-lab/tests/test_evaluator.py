@@ -38,3 +38,9 @@ def test_bug_diagnosis_scores_one_for_correct_fix(bug_task):
 def test_evaluate_with_no_final_content_scores_zero(bug_task):
     result = evaluate(bug_task, None)
     assert result["task_score"] == 0.0
+
+
+def test_bug_diagnosis_missing_scoring_config_scores_zero_without_crashing():
+    result = evaluate({"family": "bug_diagnosis"}, "some content")
+    assert result["task_score"] == 0.0
+    assert "reason" in result

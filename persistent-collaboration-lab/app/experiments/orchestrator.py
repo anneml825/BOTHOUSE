@@ -119,6 +119,7 @@ def run_task(
     history_budget = budgets["history_token_budget_per_turn"]
 
     final_message: Optional[Message] = None
+    last_stored_message: Optional[Message] = None
     status = "running"
     validation_failure_count = 0
     turn_index = 0
@@ -135,7 +136,25 @@ def run_task(
             break
 
         system_prompt = build_system_prompt(role, condition)
-        current_request = task_material if turn_index == 0 else "Continue the collaboration toward a final decision."
+        is_last_scripted_turn = turn_index == len(roles) - 1
+        if turn_index == 0:
+            current_request = task_material
+        elif is_last_scripted_turn:
+            # Real multi-turn models tend to treat "final decision" as a
+            # closing remark referencing content from earlier in the
+            # conversation, rather than restating it — reasonable in an
+            # unstructured chat, but the evaluator only ever looks at this
+            # turn's content, so it must be a complete, self-contained
+            # answer on its own (this instruction is identical across all
+            # three conditions; only the schema/prose formatting differs).
+            current_request = (
+                "This is the final turn. Provide your complete final answer as a "
+                "single, self-contained response — do not just refer back to earlier "
+                "discussion. If the task calls for corrected source code, include the "
+                "full corrected file inline here, not a partial diff or a description."
+            )
+        else:
+            current_request = "Continue the collaboration toward a final decision."
 
         if condition == "A":
             ctx = build_history_a(prose_turns, history_budget)
@@ -232,7 +251,7 @@ def run_task(
             if not outcome.ok:
                 schema_validation_passed = False
                 validation_failure_count += 1
-                store.log_validation_failure(run_id, turn_index, "syntactic", outcome.detail, True, False)
+                first_detail = outcome.detail
                 repair_attempted = True
                 repair_resp = adapter.generate(
                     system_prompt, user_prompt + f"\n\nYour previous response was invalid: {outcome.detail}\n"
@@ -246,14 +265,18 @@ def run_task(
                     repair_succeeded = True
                 else:
                     runtime_validation_error = outcome.detail
-                    store.log_validation_failure(run_id, turn_index, "syntactic", outcome.detail, True, False)
                     status = "failed"
+                # Logged once, after the repair outcome is known, so
+                # repair_succeeded reflects what actually happened rather
+                # than the pessimistic default it would have if logged
+                # before the repair attempt resolved.
+                store.log_validation_failure(run_id, turn_index, "syntactic", first_detail, True, repair_succeeded)
 
             if outcome.ok:
                 semantic = semantic_validate(outcome.message, known_claim_ids=known_ids, known_evidence_ids=known_evidence_ids)
                 if not semantic.ok:
                     validation_failure_count += 1
-                    store.log_validation_failure(run_id, turn_index, "semantic", semantic.detail, True, False)
+                    first_detail = semantic.detail
                     if not repair_attempted:
                         repair_attempted = True
                         repair_resp = adapter.generate(
@@ -275,9 +298,11 @@ def run_task(
                         else:
                             runtime_validation_error = outcome2.detail
                             status = "failed"
+                        store.log_validation_failure(run_id, turn_index, "semantic", first_detail, True, repair_succeeded)
                     else:
                         runtime_validation_error = semantic.detail
                         status = "failed"
+                        store.log_validation_failure(run_id, turn_index, "semantic", first_detail, True, False)
                 if outcome.ok:
                     msg = outcome.message
                     overlength = check_overlength(
@@ -307,6 +332,7 @@ def run_task(
         store.add_message(msg, turn_index, is_prose=(condition == "A"))
         known_ids.add(msg.message_id)
         refs[f"T{turn_index}"] = msg.message_id
+        last_stored_message = msg
 
         if condition == "A":
             prose_turns.append({
@@ -331,6 +357,10 @@ def run_task(
                 (new_id("dec"), run_id, msg.message_id, msg.content, utcnow_iso()),
             )
             conn.commit()
+        # A model reasonably calling its final turn "answer" instead of
+        # "decision" is not a schema violation — both are valid message
+        # types (§4) and either is a legitimate way to close the run.
+        if msg.message_type in (MessageType.DECISION, MessageType.ANSWER):
             final_message = msg
             status = "completed"
             break
@@ -338,6 +368,14 @@ def run_task(
     turns_executed = turn_index + (1 if final_message is not None else 0) if final_message else turn_index
     if status == "running":
         status = "turn_limit"
+    if final_message is None and last_stored_message is not None:
+        # Scripted turn budget ran out without an explicit decision/answer
+        # act — score whatever was actually said on the last turn rather
+        # than silently treating "didn't formally close the conversation"
+        # as "produced nothing." Status stays turn_limit either way: this
+        # only changes what gets scored, not whether the run is reported
+        # as having reached a clean stop.
+        final_message = last_stored_message
 
     evaluation = evaluate(task_definition, final_message.content if final_message else None)
     store.add_evaluation(new_id("eval"), run_id, evaluation["task_score"], evaluation, evaluation.get("objective_score"), evaluation.get("model_judge_score"))

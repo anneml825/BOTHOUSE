@@ -17,6 +17,7 @@ failure, re-invokes the adapter with a repair instruction.
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass, field
 from typing import Optional
 
@@ -51,7 +52,12 @@ CREATION_ALLOWED_BY_TYPE: dict[MessageType, set[Status]] = {
     MessageType.CRITIQUE: {Status.CONTESTED, Status.HYPOTHESIS, Status.CANDIDATE},
     MessageType.DECISION: {Status.CANDIDATE, Status.SUPPORTED, Status.VERIFIED},
     MessageType.RETRACTION: {Status.CANDIDATE, Status.HYPOTHESIS, Status.SUPPORTED},
-    MessageType.VERIFICATION: {Status.VERIFIED, Status.CONTESTED},
+    # `supported` included alongside `verified`/`contested`: a verification
+    # can reasonably conclude partial/weaker support rather than full
+    # verification without that being illegitimate — both are still
+    # *weaker* than `verified`, so allowing it doesn't reopen the "can't
+    # start already verified" hole this table exists to close.
+    MessageType.VERIFICATION: {Status.VERIFIED, Status.CONTESTED, Status.SUPPORTED},
 }
 
 
@@ -64,13 +70,36 @@ class ValidationOutcome:
     violations: list[str] = field(default_factory=list)
 
 
+_FENCE_RE = re.compile(r"^```[a-zA-Z]*\s*\n?|```\s*$")
+
+
+def _unfence(raw_text: str) -> str:
+    """Real models routinely wrap "JSON only" output in a markdown code
+    fence despite instructions not to. Stripping it is delimiter-level
+    robustness, not a change to how content is interpreted — MockAdapter
+    output (plain json.dumps, no fence) passes through this untouched, so
+    it doesn't affect plumbing_only behavior at all."""
+    text = raw_text.strip()
+    if text.startswith("```"):
+        text = _FENCE_RE.sub("", text).strip()
+    return text
+
+
 def parse_agent_json(raw_text: str, *, message_id: str, run_id: str, task_id: str, sender: str) -> ValidationOutcome:
     """Syntactic stage: parse raw model output as JSON and validate against
     the Message schema. Protocol metadata (message_id/run_id/task_id/sender/
     created_at) is orchestrator-controlled and always wins over anything the
     model supplies for those keys — agents are not asked to invent IDs."""
+    text = _unfence(raw_text)
     try:
-        data = json.loads(raw_text)
+        # raw_decode (not loads) so a model that appends extra content after
+        # a complete JSON object — trailing prose, or a second message it
+        # wasn't asked for — doesn't turn a perfectly parseable first object
+        # into a syntactic failure. Only the first object is ever used;
+        # anything after it is simply not looked at (not stored, not acted
+        # on) — the one-message-per-turn protocol is still enforced by the
+        # orchestrator only ever taking this one parsed message per turn.
+        data, _end_index = json.JSONDecoder().raw_decode(text)
         if not isinstance(data, dict):
             raise ValueError("top-level JSON value must be an object")
     except (json.JSONDecodeError, ValueError) as e:

@@ -19,6 +19,21 @@ def test_syntactic_failure_on_schema_mismatch():
     assert outcome.failure_type == "syntactic"
 
 
+def test_syntactic_success_strips_markdown_code_fence():
+    raw = "```json\n" + json.dumps({"message_type": "claim", "content": "x", "confidence": 0.5, "status": "hypothesis"}) + "\n```"
+    outcome = parse_agent_json(raw, message_id="m1", run_id="r1", task_id="t1", sender="agent_a")
+    assert outcome.ok
+    assert outcome.message.content == "x"
+
+
+def test_syntactic_success_ignores_trailing_content_after_first_object():
+    first = json.dumps({"message_type": "claim", "content": "first message only", "confidence": 0.5, "status": "hypothesis"})
+    second = json.dumps({"message_type": "answer", "content": "should be ignored", "confidence": 0.5, "status": "candidate"})
+    outcome = parse_agent_json(first + "\n\n" + second, message_id="m1", run_id="r1", task_id="t1", sender="agent_a")
+    assert outcome.ok
+    assert outcome.message.content == "first message only"
+
+
 def test_syntactic_success_fills_protocol_fields():
     raw = json.dumps({"message_type": "claim", "content": "x", "rationale": "y", "confidence": 0.5, "status": "hypothesis"})
     outcome = parse_agent_json(raw, message_id="m1", run_id="r1", task_id="t1", sender="agent_a")

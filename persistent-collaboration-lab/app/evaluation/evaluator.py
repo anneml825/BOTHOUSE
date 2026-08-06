@@ -48,7 +48,12 @@ def run_pytest_patch(module_filename: str, module_source: str, test_filename: st
 
 
 def evaluate_bug_diagnosis(task_definition: dict, final_content: str) -> dict:
-    scoring = task_definition["scoring"]
+    scoring = task_definition.get("scoring")
+    if not scoring:
+        # A malformed/incomplete task definition shouldn't crash the run —
+        # it should score 0 with a legible reason, same as "no final
+        # decision produced" (see evaluate() below).
+        return {"task_score": 0.0, "objective_score": 0.0, "model_judge_score": None, "reason": "task definition has no scoring config"}
     candidate_source = extract_code(final_content)
     outcome = run_pytest_patch(
         scoring["module_filename"], candidate_source,

@@ -9,6 +9,9 @@ for A, strict JSON matching the Message schema for B/C.
 from __future__ import annotations
 
 from app.models.message import Message, message_json_schema
+from app.runtime.validation import ALLOWED_REQUESTED_ACTIONS
+
+_ACTION_VOCAB = ", ".join(sorted(a for a in ALLOWED_REQUESTED_ACTIONS if a is not None))
 
 SOLVER_BASE_PROMPT = (
     "You are Agent A, the Solver, in a two-agent collaborative task. "
@@ -34,14 +37,24 @@ FORMAT_INSTRUCTIONS = {
         "for other agents to read directly."
     ),
     "B": (
-        "Respond with a single JSON object matching exactly this schema "
-        "(no prose outside the JSON):\n{schema}\n"
+        "Respond with exactly one JSON object matching this schema, and "
+        "nothing else: no markdown code fences, no prose before or after "
+        "it, no second message. It is your turn only — do not write the "
+        "other agent's turn too. Omit message_id/run_id/task_id/sender/"
+        "created_at; those are filled in for you. requested_action must be "
+        "null or exactly one of: " + _ACTION_VOCAB + " — not a free-text "
+        "instruction.\n{schema}\n"
         "Use the `rationale` field for your justification — it is a "
         "communicable explanation for other agents, not a hidden scratchpad."
     ),
     "C": (
-        "Respond with a single JSON object matching exactly this schema "
-        "(no prose outside the JSON):\n{schema}\n"
+        "Respond with exactly one JSON object matching this schema, and "
+        "nothing else: no markdown code fences, no prose before or after "
+        "it, no second message. It is your turn only — do not write the "
+        "other agent's turn too. Omit message_id/run_id/task_id/sender/"
+        "created_at; those are filled in for you. requested_action must be "
+        "null or exactly one of: " + _ACTION_VOCAB + " — not a free-text "
+        "instruction.\n{schema}\n"
         "Use the `rationale` field for your justification — it is a "
         "communicable explanation for other agents, not a hidden scratchpad. "
         "You will be shown a retrieved view of relevant shared state rather "

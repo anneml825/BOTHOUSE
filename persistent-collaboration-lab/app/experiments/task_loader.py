@@ -51,8 +51,14 @@ def build_task_material(definition: dict, include_injected: bool) -> str:
     identical across conditions A/B/C for a given run — only whether it's
     present at all varies, between a run's matched clean/injected pair."""
     lines = [definition["prompt"], "", "Provided materials:"]
-    for i, ev in enumerate(evidence_pool_for_run(definition, include_injected), start=1):
-        lines.append(f"{i}. [{ev['source_type']}] {ev['content']} (provenance: {ev['provenance']})")
+    for ev in evidence_pool_for_run(definition, include_injected):
+        # The real evidence_id must be shown, or a real model has no way to
+        # cite it in evidence_ids and every citation attempt is a doomed
+        # guess — semantic validation (unknown evidence_id) would then fire
+        # on every real run regardless of the claim's actual merits, and
+        # correction-metric detection (which keys off evidence_ids citing
+        # the injected evidence_id) could never register real exposure.
+        lines.append(f"[{ev['evidence_id']}] ({ev['source_type']}, provenance: {ev['provenance']}) {ev['content']}")
     return "\n".join(lines)
 
 
