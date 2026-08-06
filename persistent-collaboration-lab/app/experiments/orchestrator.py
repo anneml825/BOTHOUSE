@@ -151,7 +151,10 @@ def run_task(
                 "This is the final turn. Provide your complete final answer as a "
                 "single, self-contained response — do not just refer back to earlier "
                 "discussion. If the task calls for corrected source code, include the "
-                "full corrected file inline here, not a partial diff or a description."
+                "full corrected file inline here, not a partial diff or a description. "
+                "If the task calls for citing evidence, include those citations in this "
+                "final answer too, not only in earlier turns — this message is scored "
+                "on its own."
             )
         else:
             current_request = "Continue the collaboration toward a final decision."

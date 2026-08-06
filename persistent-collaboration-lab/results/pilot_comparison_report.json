@@ -1,17 +1,17 @@
 {
-  "stage": "plumbing_only",
-  "label": "stage3_pilot",
+  "stage": "experimental_pilot",
+  "label": "stage3_pilot_corrected",
   "conditions": {
     "A": {
       "condition": "A",
       "n_runs": 15,
-      "mean_task_score": 1.0,
+      "mean_task_score": 0.8666666666666667,
       "median_task_score": 1.0,
-      "sd_task_score": 0.0,
-      "mean_tokens": 2234.6,
-      "mean_cost_usd": 0.0,
-      "accuracy_per_1000_tokens": 0.4475073838718339,
-      "cost_per_successful_task": 0.0,
+      "sd_task_score": 0.339934634239519,
+      "mean_tokens": 11421.466666666667,
+      "mean_cost_usd": 0.089134,
+      "accuracy_per_1000_tokens": 0.07588050571438577,
+      "cost_per_successful_task": 0.07805123076923078,
       "schema_failure_rate": 0.0,
       "mean_turns_to_correction": null,
       "mean_downstream_contamination": null
@@ -19,27 +19,27 @@
     "B": {
       "condition": "B",
       "n_runs": 15,
-      "mean_task_score": 1.0,
+      "mean_task_score": 0.8666666666666667,
       "median_task_score": 1.0,
-      "sd_task_score": 0.0,
-      "mean_tokens": 5480.533333333334,
-      "mean_cost_usd": 0.0,
-      "accuracy_per_1000_tokens": 0.18246399377189568,
-      "cost_per_successful_task": 0.0,
-      "schema_failure_rate": 0.0,
+      "sd_task_score": 0.339934634239519,
+      "mean_tokens": 4051.733333333333,
+      "mean_cost_usd": 0.0227676,
+      "accuracy_per_1000_tokens": 0.2139002237725418,
+      "cost_per_successful_task": 0.02469115384615385,
+      "schema_failure_rate": 0.058823529411764705,
       "mean_turns_to_correction": null,
       "mean_downstream_contamination": null
     },
     "C": {
       "condition": "C",
       "n_runs": 15,
-      "mean_task_score": 1.0,
+      "mean_task_score": 0.8,
       "median_task_score": 1.0,
-      "sd_task_score": 0.0,
-      "mean_tokens": 5023.0,
-      "mean_cost_usd": 0.0,
-      "accuracy_per_1000_tokens": 0.1990842126219391,
-      "cost_per_successful_task": 0.0,
+      "sd_task_score": 0.4,
+      "mean_tokens": 4538.866666666667,
+      "mean_cost_usd": 0.022137399999999998,
+      "accuracy_per_1000_tokens": 0.1762554529030742,
+      "cost_per_successful_task": 0.01784825,
       "schema_failure_rate": 0.0,
       "mean_turns_to_correction": null,
       "mean_downstream_contamination": null
@@ -72,15 +72,15 @@
         "clean_run_id": "pilot-evidence_synthesis_002-A-clean",
         "injected_run_id": "pilot-evidence_synthesis_002-A-injected",
         "clean_score": 1.0,
-        "injected_score": 1.0,
-        "delta": 0.0
+        "injected_score": 0.0,
+        "delta": -1.0
       },
       {
         "clean_run_id": "pilot-constraint_planning_001-A-clean",
         "injected_run_id": "pilot-constraint_planning_001-A-injected",
         "clean_score": 1.0,
-        "injected_score": 1.0,
-        "delta": 0.0
+        "injected_score": 0.0,
+        "delta": -1.0
       }
     ],
     "B": [
@@ -101,9 +101,9 @@
       {
         "clean_run_id": "pilot-evidence_synthesis_001-B-clean",
         "injected_run_id": "pilot-evidence_synthesis_001-B-injected",
-        "clean_score": 1.0,
+        "clean_score": 0.0,
         "injected_score": 1.0,
-        "delta": 0.0
+        "delta": 1.0
       },
       {
         "clean_run_id": "pilot-evidence_synthesis_002-B-clean",
@@ -139,8 +139,8 @@
         "clean_run_id": "pilot-evidence_synthesis_001-C-clean",
         "injected_run_id": "pilot-evidence_synthesis_001-C-injected",
         "clean_score": 1.0,
-        "injected_score": 1.0,
-        "delta": 0.0
+        "injected_score": 0.0,
+        "delta": -1.0
       },
       {
         "clean_run_id": "pilot-evidence_synthesis_002-C-clean",
@@ -153,13 +153,13 @@
         "clean_run_id": "pilot-constraint_planning_001-C-clean",
         "injected_run_id": "pilot-constraint_planning_001-C-injected",
         "clean_score": 1.0,
-        "injected_score": 1.0,
-        "delta": 0.0
+        "injected_score": 0.0,
+        "delta": -1.0
       }
     ]
   },
   "notes": [
     "Pilot-scale report: means/medians only, no significance testing (see README limitations).",
-    "Labeled stage=plumbing_only \u2014 only 'experimental_pilot' results should ever inform the research hypothesis."
+    "Labeled stage=experimental_pilot \u2014 only 'experimental_pilot' results should ever inform the research hypothesis."
   ]
 }

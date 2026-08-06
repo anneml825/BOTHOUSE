@@ -8,7 +8,6 @@ for "genuinely ambiguous residue" only.
 
 from __future__ import annotations
 
-import ast
 import re
 import subprocess
 import sys
@@ -24,8 +23,15 @@ FILENAME_MARKER_RE = re.compile(r"^-{2,}\s*\S+\.\w+\s*-{2,}\s*$", re.MULTILINE)
 
 
 def _is_valid_python(source: str) -> bool:
+    """`compile()`, not `ast.parse()`: ast.parse only checks grammar, not
+    the semantic constraints Python actually enforces before running code
+    (e.g. `return` outside a function is grammatically fine to ast.parse
+    but a real SyntaxError at compile time). A real model's response can
+    include an earlier code snippet quoted purely for discussion (e.g. "the
+    buggy line was `return ...`") that ast.parse would wrongly accept as a
+    complete, valid module — compile() catches that."""
     try:
-        ast.parse(source)
+        compile(source, "<candidate>", "exec")
         return True
     except SyntaxError:
         return False
@@ -35,14 +41,23 @@ def extract_code(content: str) -> str:
     """Structured (B/C) decisions carry raw source directly in `content`.
     Prose (Condition A, or a real model mixing explanation with code
     despite instructions not to) may wrap or precede the same source with
-    a markdown fence or a "--- filename ---" marker. Rather than assume
-    one specific convention, try each candidate extraction and keep the
-    first one that's actually valid Python — syntactic validity is a
-    representation-agnostic signal a raw regex guess isn't."""
+    a markdown fence, a "--- filename ---" marker, or no marker at all —
+    just a plain sentence like "Corrected module:" followed by unfenced
+    code. Rather than assume one specific convention, try each candidate
+    extraction and keep the first one that's actually valid, compilable
+    Python — syntactic validity is a representation-agnostic signal a raw
+    regex guess isn't."""
     candidates = [m.strip() for m in CODE_FENCE_RE.findall(content)]
     markers = list(FILENAME_MARKER_RE.finditer(content))
     if markers:
         candidates.append(content[markers[-1].end():].strip())
+    # No marker/fence at all: try every paragraph-boundary suffix (earliest
+    # first) so "some prose.\n\nCorrected module:\n\ndef f(): ..." finds the
+    # point where prose ends and a complete, self-contained code block
+    # begins, without needing to recognize the specific lead-in phrasing.
+    paragraphs = content.split("\n\n")
+    for i in range(len(paragraphs)):
+        candidates.append("\n\n".join(paragraphs[i:]).strip())
     candidates.append(content.strip())
 
     for candidate in candidates:

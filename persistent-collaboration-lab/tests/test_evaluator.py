@@ -36,6 +36,39 @@ def test_extract_code_from_filename_marker_convention():
     assert "root cause" not in extracted
 
 
+def test_extract_code_ignores_an_earlier_quoted_buggy_snippet():
+    # A real model's reasoning trail often quotes the ORIGINAL buggy line
+    # for discussion before giving the real fix later. That snippet alone
+    # (`return ...` with no enclosing function) is grammatically fine to
+    # ast.parse but a real SyntaxError to compile() — must not be picked.
+    content = (
+        "The original code was:\n\n```python\n"
+        "return bool(user.get('username') or not user.get('banned', False))\n"
+        "```\n\n"
+        "Corrected full module:\n\n```python\n"
+        "def is_valid_user(user):\n"
+        "    return bool(user.get('username') and not user.get('banned', False))\n"
+        "```\n"
+    )
+    extracted = extract_code(content)
+    assert "def is_valid_user" in extracted
+    assert "and not user" in extracted
+
+
+def test_extract_code_finds_unfenced_code_after_a_plain_label_sentence():
+    # No fence, no "--- filename ---" marker — just a plain sentence
+    # introducing unfenced code, which real models do.
+    content = (
+        "Root cause: the format string has no decimal-place directive.\n\n"
+        "Corrected price_module.py:\n\n"
+        "def format_price(cents):\n"
+        '    return f"${cents / 100:.2f}"\n'
+    )
+    extracted = extract_code(content)
+    assert "def format_price" in extracted
+    assert "Root cause" not in extracted
+
+
 def test_extract_code_prefers_valid_python_over_raw_prose_mix():
     # No fence, no marker, code embedded after explanatory prose with no
     # delimiter at all — extract_code can't rescue this (nothing to key
