@@ -32,10 +32,14 @@ class AnthropicAdapter(ModelAdapter):
     def generate(self, system_prompt: str, user_prompt: str, *, max_tokens: int, temperature: float = 0.0) -> AdapterResponse:
         client = self._client_lazy()
         start = time.perf_counter()
+        # `temperature` is accepted in the shared ModelAdapter interface (and
+        # still forwarded for providers/models that support it, e.g. the
+        # OpenAI adapter) but the newest Claude models reject it outright
+        # ("temperature is deprecated for this model") rather than silently
+        # ignoring it, so it's deliberately not passed here.
         response = client.messages.create(
             model=self.model_name,
             max_tokens=max_tokens,
-            temperature=temperature,
             system=system_prompt,
             messages=[{"role": "user", "content": user_prompt}],
         )

@@ -18,6 +18,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
+from dotenv import load_dotenv  # noqa: E402
+
+load_dotenv(ROOT / ".env")
+
 from app.db.init import init_db  # noqa: E402
 from app.evaluation.analysis import build_comparison_report  # noqa: E402
 from app.experiments.config import load_config  # noqa: E402
