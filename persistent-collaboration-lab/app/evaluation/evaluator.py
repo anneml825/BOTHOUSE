@@ -122,8 +122,13 @@ def evaluate_evidence_synthesis(task_definition: dict, final_content: str) -> di
 
     content_lower = final_content.lower()
 
-    paraphrases = scoring.get("acceptable_paraphrases", [])
-    correct_fact_present = any(p.lower() in content_lower for p in paraphrases)
+    # The bare atomic_fact_value is always an implicit accepted paraphrase —
+    # the one substring every correct answer must contain regardless of
+    # surrounding phrasing. acceptable_paraphrases adds *additional* full
+    # phrasings a task wants to accept; it was never meant to require every
+    # task author to anticipate every way to phrase "and the value is X".
+    paraphrases = [*scoring.get("acceptable_paraphrases", []), str(scoring.get("atomic_fact_value", ""))]
+    correct_fact_present = any(p and p.lower() in content_lower for p in paraphrases)
 
     forbidden_patterns = scoring.get("unsupported_claim_rules", {}).get("forbidden_patterns", [])
     forbidden_hit = [p for p in forbidden_patterns if p.lower() in content_lower]

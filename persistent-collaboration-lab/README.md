@@ -158,20 +158,37 @@ matching API key (`.env.example`).
 ## Pilot plan (after the slice works)
 
 1. Stage 1 (done): deterministic mocks, full plumbing.
-2. Stage 2: one cheap-model smoke task across all conditions.
-3. Stage 3: 10 tasks × 3 conditions × 1 seed = 30 clean runs, then 5
-   selected tasks × 3 conditions = 15 matched injected runs (45 total).
+2. Stage 2 (done in mock; run against a real cheap model per README
+   "Staging" before trusting it): `scripts/run_smoke_test.py` — one task
+   across all conditions against a real adapter. Several real-model-only
+   gaps were found and fixed this way (markdown-fenced JSON, evidence IDs
+   never shown to agents, final-turn/ANSWER-vs-DECISION handling, code
+   extraction assuming only markdown fences) — see git history for
+   `app/runtime/validation.py`, `app/experiments/orchestrator.py`, and
+   `app/evaluation/evaluator.py`.
+3. Stage 3 (done in mock; needs a real-model run to count):
+   `scripts/run_pilot.py` — 10 tasks × 3 conditions × 1 seed = 30 clean
+   runs, then 5 selected tasks × 3 conditions = 15 matched injected runs
+   (45 total). Verified end-to-end against `MockAdapter` (all runs
+   complete, task_score 1.0, injected runs detect and correct at the
+   expected turn, Condition C replay-consistent) — see
+   `tests/test_pilot_suite.py`. Still `plumbing_only`/mock; running it
+   against an `experimental_pilot`-stage model is the actual pilot.
 4. Inspect effect direction, variance, schema tax, and correction behavior
    *before* expanding further. Add tasks if task-to-task variance is high;
    add seeds if repeated outcomes are unstable; add injected pairs if the
    misinformation effect is unclear; stop rather than re-spend budget if
    the architectural disadvantage is already clear.
 
-Task suite as shipped: `bug_diagnosis` has one fully-built task
-(`bug_diagnosis_001`); `evidence_synthesis` and `constraint_planning` have
-READMEs describing the required `task.json` shape for the ~10-tasks-each
-expansion, not yet populated (see each family's directory and §19 of the
-build spec — Milestone 1 is explicitly one task, not the full suite).
+Task suite as shipped: 10 tasks across all three families — 4
+`bug_diagnosis`, 3 `evidence_synthesis`, 3 `constraint_planning` — each
+with a clean and a false-evidence-injected scenario, covering all five
+injection types from §7 across the suite. Deterministic evaluators exist
+for all three families (`app/evaluation/evaluator.py`); `evidence_synthesis`'s
+scoring config includes `contradiction_pairs` per §8 but doesn't yet
+enforce it (checking whether agents *recognized* a conflict needs the full
+message history, not just the final answer — a known v0.1 scope gap, not
+silently dropped).
 
 ## Cost controls
 

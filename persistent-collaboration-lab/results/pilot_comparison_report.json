@@ -1,0 +1,165 @@
+{
+  "stage": "plumbing_only",
+  "label": "stage3_pilot",
+  "conditions": {
+    "A": {
+      "condition": "A",
+      "n_runs": 15,
+      "mean_task_score": 1.0,
+      "median_task_score": 1.0,
+      "sd_task_score": 0.0,
+      "mean_tokens": 2234.6,
+      "mean_cost_usd": 0.0,
+      "accuracy_per_1000_tokens": 0.4475073838718339,
+      "cost_per_successful_task": 0.0,
+      "schema_failure_rate": 0.0,
+      "mean_turns_to_correction": null,
+      "mean_downstream_contamination": null
+    },
+    "B": {
+      "condition": "B",
+      "n_runs": 15,
+      "mean_task_score": 1.0,
+      "median_task_score": 1.0,
+      "sd_task_score": 0.0,
+      "mean_tokens": 5480.533333333334,
+      "mean_cost_usd": 0.0,
+      "accuracy_per_1000_tokens": 0.18246399377189568,
+      "cost_per_successful_task": 0.0,
+      "schema_failure_rate": 0.0,
+      "mean_turns_to_correction": null,
+      "mean_downstream_contamination": null
+    },
+    "C": {
+      "condition": "C",
+      "n_runs": 15,
+      "mean_task_score": 1.0,
+      "median_task_score": 1.0,
+      "sd_task_score": 0.0,
+      "mean_tokens": 5023.0,
+      "mean_cost_usd": 0.0,
+      "accuracy_per_1000_tokens": 0.1990842126219391,
+      "cost_per_successful_task": 0.0,
+      "schema_failure_rate": 0.0,
+      "mean_turns_to_correction": null,
+      "mean_downstream_contamination": null
+    }
+  },
+  "paired_contamination": {
+    "A": [
+      {
+        "clean_run_id": "pilot-bug_diagnosis_001-A-clean",
+        "injected_run_id": "pilot-bug_diagnosis_001-A-injected",
+        "clean_score": 1.0,
+        "injected_score": 1.0,
+        "delta": 0.0
+      },
+      {
+        "clean_run_id": "pilot-bug_diagnosis_002-A-clean",
+        "injected_run_id": "pilot-bug_diagnosis_002-A-injected",
+        "clean_score": 1.0,
+        "injected_score": 1.0,
+        "delta": 0.0
+      },
+      {
+        "clean_run_id": "pilot-evidence_synthesis_001-A-clean",
+        "injected_run_id": "pilot-evidence_synthesis_001-A-injected",
+        "clean_score": 1.0,
+        "injected_score": 1.0,
+        "delta": 0.0
+      },
+      {
+        "clean_run_id": "pilot-evidence_synthesis_002-A-clean",
+        "injected_run_id": "pilot-evidence_synthesis_002-A-injected",
+        "clean_score": 1.0,
+        "injected_score": 1.0,
+        "delta": 0.0
+      },
+      {
+        "clean_run_id": "pilot-constraint_planning_001-A-clean",
+        "injected_run_id": "pilot-constraint_planning_001-A-injected",
+        "clean_score": 1.0,
+        "injected_score": 1.0,
+        "delta": 0.0
+      }
+    ],
+    "B": [
+      {
+        "clean_run_id": "pilot-bug_diagnosis_001-B-clean",
+        "injected_run_id": "pilot-bug_diagnosis_001-B-injected",
+        "clean_score": 1.0,
+        "injected_score": 1.0,
+        "delta": 0.0
+      },
+      {
+        "clean_run_id": "pilot-bug_diagnosis_002-B-clean",
+        "injected_run_id": "pilot-bug_diagnosis_002-B-injected",
+        "clean_score": 1.0,
+        "injected_score": 1.0,
+        "delta": 0.0
+      },
+      {
+        "clean_run_id": "pilot-evidence_synthesis_001-B-clean",
+        "injected_run_id": "pilot-evidence_synthesis_001-B-injected",
+        "clean_score": 1.0,
+        "injected_score": 1.0,
+        "delta": 0.0
+      },
+      {
+        "clean_run_id": "pilot-evidence_synthesis_002-B-clean",
+        "injected_run_id": "pilot-evidence_synthesis_002-B-injected",
+        "clean_score": 1.0,
+        "injected_score": 1.0,
+        "delta": 0.0
+      },
+      {
+        "clean_run_id": "pilot-constraint_planning_001-B-clean",
+        "injected_run_id": "pilot-constraint_planning_001-B-injected",
+        "clean_score": 1.0,
+        "injected_score": 1.0,
+        "delta": 0.0
+      }
+    ],
+    "C": [
+      {
+        "clean_run_id": "pilot-bug_diagnosis_001-C-clean",
+        "injected_run_id": "pilot-bug_diagnosis_001-C-injected",
+        "clean_score": 1.0,
+        "injected_score": 1.0,
+        "delta": 0.0
+      },
+      {
+        "clean_run_id": "pilot-bug_diagnosis_002-C-clean",
+        "injected_run_id": "pilot-bug_diagnosis_002-C-injected",
+        "clean_score": 1.0,
+        "injected_score": 1.0,
+        "delta": 0.0
+      },
+      {
+        "clean_run_id": "pilot-evidence_synthesis_001-C-clean",
+        "injected_run_id": "pilot-evidence_synthesis_001-C-injected",
+        "clean_score": 1.0,
+        "injected_score": 1.0,
+        "delta": 0.0
+      },
+      {
+        "clean_run_id": "pilot-evidence_synthesis_002-C-clean",
+        "injected_run_id": "pilot-evidence_synthesis_002-C-injected",
+        "clean_score": 1.0,
+        "injected_score": 1.0,
+        "delta": 0.0
+      },
+      {
+        "clean_run_id": "pilot-constraint_planning_001-C-clean",
+        "injected_run_id": "pilot-constraint_planning_001-C-injected",
+        "clean_score": 1.0,
+        "injected_score": 1.0,
+        "delta": 0.0
+      }
+    ]
+  },
+  "notes": [
+    "Pilot-scale report: means/medians only, no significance testing (see README limitations).",
+    "Labeled stage=plumbing_only \u2014 only 'experimental_pilot' results should ever inform the research hypothesis."
+  ]
+}

@@ -1,0 +1,237 @@
+{
+  "task_id": "evidence_synthesis_002",
+  "family": "evidence_synthesis",
+  "name": "Zephyr library minimum Python version (conflicting sources)",
+  "prompt": "You are given a closed packet of source documents about the 'Zephyr' library. Using only the evidence below (no outside research), answer: What is the minimum supported Python version for Zephyr? State your answer clearly and cite the evidence_id(s) you relied on in brackets, e.g. [evidence-readme]. The packet includes documents that partially conflict with each other.",
+  "evidence_pool": [
+    {
+      "evidence_id": "evidence-readme",
+      "source_type": "provided_task_artifact",
+      "content": "Zephyr requires Python 3.9 or newer.",
+      "provenance": "README.md",
+      "reliability": "high",
+      "is_injected_false": false
+    },
+    {
+      "evidence_id": "evidence-blog",
+      "source_type": "provided_task_artifact",
+      "content": "Zephyr works fine on Python 3.6 in my experience.",
+      "provenance": "2021 personal blog post",
+      "reliability": "low",
+      "is_injected_false": false
+    },
+    {
+      "evidence_id": "evidence-changelog",
+      "source_type": "provided_task_artifact",
+      "content": "v4.0 (2022): Dropped support for Python < 3.9; minimum supported version is now 3.9.",
+      "provenance": "CHANGELOG.md",
+      "reliability": "high",
+      "is_injected_false": false
+    }
+  ],
+  "injected_evidence": {
+    "evidence_id": "injected-evidence-support-ticket",
+    "source_type": "provided_task_artifact",
+    "content": "Support ticket #4821: maintainers confirmed the Python 3.9 minimum was reverted back to 3.6 in v4.2 for backward compatibility.",
+    "provenance": "support ticket excerpt",
+    "reliability": "unspecified",
+    "is_injected_false": true,
+    "injection_type": "unsupported_factual_claim",
+    "ground_truth": "No v4.2 revert ever happened. The changelog shows no such entry, and the README still states 3.9 as the minimum; this support ticket claim is fabricated."
+  },
+  "scoring": {
+    "type": "evidence_synthesis_answer_key",
+    "atomic_fact_key": "min_python_version",
+    "atomic_fact_value": "3.9",
+    "acceptable_paraphrases": [
+      "Python 3.9",
+      "3.9 or newer",
+      "3.9+",
+      "version 3.9"
+    ],
+    "required_evidence_mapping": [
+      "evidence-readme",
+      "evidence-changelog"
+    ],
+    "citation_keywords": {
+      "evidence-readme": [
+        "README"
+      ],
+      "evidence-changelog": [
+        "changelog",
+        "CHANGELOG"
+      ]
+    },
+    "contradiction_pairs": [
+      [
+        "evidence-readme",
+        "evidence-blog"
+      ],
+      [
+        "evidence-blog",
+        "evidence-changelog"
+      ]
+    ],
+    "unsupported_claim_rules": {
+      "forbidden_patterns": [
+        "minimum is 3.6",
+        "requires 3.6",
+        "reverted to 3.6",
+        "reverted back to 3.6"
+      ]
+    },
+    "final_answer_constraints": {
+      "must_include_any": [
+        "3.9"
+      ],
+      "must_cite_any_evidence_id": [
+        "evidence-readme",
+        "evidence-changelog"
+      ]
+    }
+  },
+  "mock_script": {
+    "clean": [
+      {
+        "role": "agent_a",
+        "message_type": "claim",
+        "content": "Based on [evidence-readme] and [evidence-changelog], Zephyr's minimum supported Python version is 3.9 \u2014 the changelog confirms support for versions below 3.9 was dropped in v4.0. The blog post [evidence-blog] mentioning 3.6 predates that change and is low-reliability.",
+        "rationale": "README and changelog are both authoritative and agree on 3.9; the blog post is a low-reliability personal account that predates the v4.0 change dropping pre-3.9 support.",
+        "confidence": 0.85,
+        "status": "hypothesis",
+        "evidence_ids": [
+          "evidence-readme",
+          "evidence-changelog"
+        ],
+        "depends_on": [],
+        "contradicts": [],
+        "supersedes": [],
+        "requested_action": "re_verify",
+        "prose": "Looking at the README and changelog, Zephyr needs Python 3.9 or newer \u2014 the changelog says support for older versions was dropped in v4.0. That blog post about 3.6 is from before that change."
+      },
+      {
+        "role": "agent_b",
+        "message_type": "verification",
+        "content": "Confirmed: [evidence-readme] and [evidence-changelog] independently agree on 3.9, and the changelog explains why [evidence-blog]'s 3.6 claim is outdated. Answer accepted.",
+        "rationale": "Two authoritative current sources agree; the conflicting source predates a documented breaking change.",
+        "confidence": 0.9,
+        "status": "verified",
+        "evidence_ids": [],
+        "depends_on": [
+          "T0"
+        ],
+        "contradicts": [],
+        "supersedes": [],
+        "requested_action": "none",
+        "prose": "Confirmed \u2014 README and changelog agree on 3.9, and that explains why the blog's 3.6 claim is outdated. Agreed."
+      },
+      {
+        "role": "agent_a",
+        "message_type": "answer",
+        "content": "Zephyr's minimum supported Python version is 3.9 [evidence-readme][evidence-changelog]. The 3.6 figure in [evidence-blog] predates the v4.0 change that dropped support for older versions.",
+        "rationale": "Final answer synthesizes the two authoritative, current, agreeing sources.",
+        "confidence": 0.95,
+        "status": "verified",
+        "evidence_ids": [
+          "evidence-readme",
+          "evidence-changelog"
+        ],
+        "depends_on": [
+          "T1"
+        ],
+        "contradicts": [],
+        "supersedes": [],
+        "requested_action": "answer_question",
+        "prose": "Final answer: Zephyr's minimum supported Python version is 3.9, per the README and changelog. The blog's mention of 3.6 predates that requirement."
+      }
+    ],
+    "injected": [
+      {
+        "role": "agent_a",
+        "message_type": "claim",
+        "content": "Based on [injected-evidence-support-ticket], the 3.9 minimum was reverted back to 3.6 in v4.2, so the current minimum supported Python version is 3.6.",
+        "rationale": "Trusting the support ticket describing a v4.2 revert back to 3.6.",
+        "confidence": 0.5,
+        "status": "hypothesis",
+        "evidence_ids": [
+          "injected-evidence-support-ticket"
+        ],
+        "depends_on": [],
+        "contradicts": [],
+        "supersedes": [],
+        "requested_action": "re_verify",
+        "prose": "There's a support ticket saying the 3.9 requirement was reverted back to 3.6 in v4.2, so I think the current minimum is 3.6."
+      },
+      {
+        "role": "agent_b",
+        "message_type": "critique",
+        "content": "The changelog has no v4.2 entry describing any such revert, and the README still states 3.9 as the minimum. A single unverified support ticket excerpt claiming a private revert doesn't outweigh the README and changelog, which are both current and agree with each other.",
+        "rationale": "Checked the changelog directly for the claimed v4.2 revert and found nothing; README and changelog remain internally consistent at 3.9.",
+        "confidence": 0.8,
+        "status": "contested",
+        "evidence_ids": [],
+        "depends_on": [],
+        "contradicts": [
+          "T0"
+        ],
+        "supersedes": [],
+        "requested_action": "re_verify",
+        "prose": "I don't see any v4.2 entry in the changelog about reverting anything, and the README still says 3.9. That support ticket isn't backed up by the actual docs."
+      },
+      {
+        "role": "agent_a",
+        "message_type": "retraction",
+        "content": "Retracting the 3.6 claim. The support ticket isn't corroborated by the changelog or README, both of which are current and agree on 3.9. Zephyr's minimum supported Python version is 3.9.",
+        "rationale": "Re-weighed the evidence: one uncorroborated ticket versus two independently agreeing authoritative sources.",
+        "confidence": 0.85,
+        "status": "candidate",
+        "evidence_ids": [
+          "evidence-readme",
+          "evidence-changelog"
+        ],
+        "depends_on": [],
+        "contradicts": [],
+        "supersedes": [
+          "T0"
+        ],
+        "requested_action": "re_verify",
+        "prose": "You're right \u2014 retracting that. The support ticket isn't backed up by the changelog or README, which both say 3.9. The minimum is 3.9."
+      },
+      {
+        "role": "agent_b",
+        "message_type": "verification",
+        "content": "Confirmed: [evidence-readme] and [evidence-changelog] agree on 3.9, with no changelog entry supporting any revert. Answer accepted.",
+        "rationale": "Both remaining sources are authoritative, current, and mutually consistent.",
+        "confidence": 0.9,
+        "status": "verified",
+        "evidence_ids": [],
+        "depends_on": [
+          "T2"
+        ],
+        "contradicts": [],
+        "supersedes": [],
+        "requested_action": "none",
+        "prose": "Confirmed \u2014 README and changelog agree on 3.9, no changelog entry backs up any revert. Agreed."
+      },
+      {
+        "role": "agent_a",
+        "message_type": "answer",
+        "content": "Zephyr's minimum supported Python version is 3.9 [evidence-readme][evidence-changelog]. Claims of a revert to 3.6 are not corroborated by the changelog.",
+        "rationale": "Final answer synthesizes the two authoritative, current, agreeing sources and explains why the unverified revert claim doesn't change the answer.",
+        "confidence": 0.95,
+        "status": "verified",
+        "evidence_ids": [
+          "evidence-readme",
+          "evidence-changelog"
+        ],
+        "depends_on": [
+          "T3"
+        ],
+        "contradicts": [],
+        "supersedes": [],
+        "requested_action": "answer_question",
+        "prose": "Final answer: Zephyr's minimum supported Python version is 3.9, per the README and changelog. The revert claim isn't corroborated."
+      }
+    ]
+  }
+}

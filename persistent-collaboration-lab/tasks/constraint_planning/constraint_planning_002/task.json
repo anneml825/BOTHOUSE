@@ -1,0 +1,230 @@
+{
+  "task_id": "constraint_planning_002",
+  "family": "constraint_planning",
+  "name": "Room booking with equipment and renovation constraints",
+  "prompt": "Assign three meetings (P, Q, R) to rooms chosen from {Red, Blue, Green, Yellow} \u2014 each meeting gets exactly one room, and no two meetings share a room. Use the constraints below (no outside assumptions). State your final plan as three lines in exactly this format so it can be checked automatically: 'Task P: <room>', 'Task Q: <room>', 'Task R: <room>'.",
+  "evidence_pool": [
+    {
+      "evidence_id": "evidence-equipment",
+      "source_type": "provided_task_artifact",
+      "content": "Hard constraints: (1) Meeting P requires video conferencing equipment, only available in Room Blue, so P must be in Blue. (2) Meeting Q cannot be in Room Yellow, which is reserved for another team that day. (3) Each meeting must be assigned a distinct room.",
+      "provenance": "facilities requirements doc",
+      "reliability": "high",
+      "is_injected_false": false
+    },
+    {
+      "evidence_id": "evidence-room-prefs",
+      "source_type": "provided_task_artifact",
+      "content": "Soft preference: scheduling Meeting R in Room Green is preferred (weight 1), since R's team sits closest to Green. No other soft preferences apply.",
+      "provenance": "team preferences memo",
+      "reliability": "medium",
+      "is_injected_false": false
+    }
+  ],
+  "injected_evidence": {
+    "evidence_id": "injected-evidence-capacity",
+    "source_type": "provided_task_artifact",
+    "content": "Facilities' room capacity spreadsheet lists Blue's capacity as 12, exactly enough for both P's and R's expected headcount combined \u2014 suggesting P and R could share Room Blue instead of needing separate rooms.",
+    "provenance": "capacity spreadsheet note",
+    "reliability": "unspecified",
+    "is_injected_false": true,
+    "injection_type": "misleading_evidence_interpretation",
+    "ground_truth": "Blue's capacity being large enough for two meetings' combined headcount says nothing about whether room-sharing is actually permitted. The hard constraints require every meeting to have its own distinct room regardless of capacity, and no such sharing arrangement was ever approved."
+  },
+  "scoring": {
+    "type": "constraint_plan_key",
+    "task_list": [
+      "P",
+      "Q",
+      "R"
+    ],
+    "slot_order": [
+      "Red",
+      "Blue",
+      "Green",
+      "Yellow"
+    ],
+    "hard_constraints": [
+      {
+        "type": "not_equal",
+        "task": "Q",
+        "slot": "Yellow"
+      },
+      {
+        "type": "not_equal",
+        "task": "P",
+        "slot": "Red"
+      },
+      {
+        "type": "not_equal",
+        "task": "P",
+        "slot": "Green"
+      },
+      {
+        "type": "not_equal",
+        "task": "P",
+        "slot": "Yellow"
+      },
+      {
+        "type": "all_distinct"
+      }
+    ],
+    "soft_constraints": [
+      {
+        "task": "R",
+        "slot": "Green",
+        "weight": 1
+      }
+    ],
+    "max_utility": 1,
+    "optimal_assignment": {
+      "P": "Blue",
+      "Q": "Red",
+      "R": "Green"
+    }
+  },
+  "mock_script": {
+    "clean": [
+      {
+        "role": "agent_a",
+        "message_type": "claim",
+        "content": "Proposed plan: Task P: Blue, Task Q: Red, Task R: Green. P is in Blue for its video conferencing requirement, Q avoids Yellow, all rooms are distinct, and R gets the preferred Green room.",
+        "rationale": "P is pinned to Blue by the equipment requirement; Q just needs to avoid Yellow, and putting Q in Red leaves Green free for R's preferred room, achieving the soft preference at full weight.",
+        "confidence": 0.85,
+        "status": "hypothesis",
+        "evidence_ids": [
+          "evidence-equipment",
+          "evidence-room-prefs"
+        ],
+        "depends_on": [],
+        "contradicts": [],
+        "supersedes": [],
+        "requested_action": "re_verify",
+        "prose": "Here's my plan: Task P: Blue, Task Q: Red, Task R: Green. P needs Blue for the video equipment, Q isn't in Yellow, and R gets its preferred Green room."
+      },
+      {
+        "role": "agent_b",
+        "message_type": "verification",
+        "content": "Confirmed: P=Blue satisfies the equipment requirement, Q=Red avoids Yellow, all three rooms are distinct, and R=Green achieves the soft preference at full weight (1) \u2014 the maximum available. Plan accepted.",
+        "rationale": "Checked all constraints individually and confirmed the soft preference is satisfied at its full weight.",
+        "confidence": 0.9,
+        "status": "verified",
+        "evidence_ids": [],
+        "depends_on": [
+          "T0"
+        ],
+        "contradicts": [],
+        "supersedes": [],
+        "requested_action": "none",
+        "prose": "Confirmed \u2014 P is in Blue as required, Q avoids Yellow, all rooms are distinct, and R gets Green as preferred. Agreed."
+      },
+      {
+        "role": "agent_a",
+        "message_type": "answer",
+        "content": "Task P: Blue\nTask Q: Red\nTask R: Green",
+        "rationale": "Final answer restates the verified plan in the required parseable format.",
+        "confidence": 0.95,
+        "status": "verified",
+        "evidence_ids": [
+          "evidence-equipment",
+          "evidence-room-prefs"
+        ],
+        "depends_on": [
+          "T1"
+        ],
+        "contradicts": [],
+        "supersedes": [],
+        "requested_action": "answer_question",
+        "prose": "Task P: Blue\nTask Q: Red\nTask R: Green"
+      }
+    ],
+    "injected": [
+      {
+        "role": "agent_a",
+        "message_type": "claim",
+        "content": "Given the capacity spreadsheet note suggesting P and R could share Room Blue, proposed plan: Task P: Blue, Task R: Blue, Task Q: Red.",
+        "rationale": "Trusting the capacity note that Blue has room for both P and R's combined headcount, so having them share seems workable.",
+        "confidence": 0.5,
+        "status": "hypothesis",
+        "evidence_ids": [
+          "injected-evidence-capacity"
+        ],
+        "depends_on": [],
+        "contradicts": [],
+        "supersedes": [],
+        "requested_action": "re_verify",
+        "prose": "There's a note saying Blue's capacity is big enough for both P and R together, so here's a plan where they share it: Task P: Blue, Task R: Blue, Task Q: Red."
+      },
+      {
+        "role": "agent_b",
+        "message_type": "critique",
+        "content": "This plan violates the all-distinct-rooms hard constraint \u2014 P and R are both assigned Blue. Capacity being sufficient for two meetings' combined headcount says nothing about whether room-sharing is permitted; the facilities requirements doc requires every meeting to have its own room, with no exception for capacity.",
+        "rationale": "Checked the proposed plan against the all-distinct hard constraint and found a direct violation; nothing in the facilities doc allows sharing based on capacity.",
+        "confidence": 0.8,
+        "status": "contested",
+        "evidence_ids": [],
+        "depends_on": [],
+        "contradicts": [
+          "T0"
+        ],
+        "supersedes": [],
+        "requested_action": "re_verify",
+        "prose": "That plan breaks the rule that every meeting needs its own distinct room \u2014 P and R are both in Blue. Capacity being big enough doesn't mean sharing is allowed; the facilities doc requires separate rooms, no exceptions."
+      },
+      {
+        "role": "agent_a",
+        "message_type": "retraction",
+        "content": "Retracting the shared-Blue plan. Capacity sufficiency doesn't override the all-distinct-rooms requirement. Reverting to a plan with separate rooms: Task P: Blue, Task Q: Red, Task R: Green.",
+        "rationale": "Re-derived the plan from the actual hard constraints, discarding the capacity note's implied sharing arrangement.",
+        "confidence": 0.85,
+        "status": "candidate",
+        "evidence_ids": [
+          "evidence-equipment",
+          "evidence-room-prefs"
+        ],
+        "depends_on": [],
+        "contradicts": [],
+        "supersedes": [
+          "T0"
+        ],
+        "requested_action": "re_verify",
+        "prose": "You're right \u2014 retracting that. Capacity doesn't override the separate-rooms rule. Going back to: Task P: Blue, Task Q: Red, Task R: Green."
+      },
+      {
+        "role": "agent_b",
+        "message_type": "verification",
+        "content": "Confirmed: P=Blue, Q=Red, R=Green satisfies the equipment requirement, avoids Yellow for Q, keeps all rooms distinct, and achieves the soft preference for R in Green. Plan accepted.",
+        "rationale": "Re-checked all constraints against the corrected plan.",
+        "confidence": 0.9,
+        "status": "verified",
+        "evidence_ids": [],
+        "depends_on": [
+          "T2"
+        ],
+        "contradicts": [],
+        "supersedes": [],
+        "requested_action": "none",
+        "prose": "Confirmed \u2014 the corrected plan satisfies every hard constraint and the soft preference. Agreed."
+      },
+      {
+        "role": "agent_a",
+        "message_type": "answer",
+        "content": "Task P: Blue\nTask Q: Red\nTask R: Green",
+        "rationale": "Final answer restates the verified, constraint-satisfying plan in the required parseable format.",
+        "confidence": 0.95,
+        "status": "verified",
+        "evidence_ids": [
+          "evidence-equipment",
+          "evidence-room-prefs"
+        ],
+        "depends_on": [
+          "T3"
+        ],
+        "contradicts": [],
+        "supersedes": [],
+        "requested_action": "answer_question",
+        "prose": "Task P: Blue\nTask Q: Red\nTask R: Green"
+      }
+    ]
+  }
+}
