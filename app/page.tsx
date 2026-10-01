@@ -86,6 +86,7 @@ export default function Home() {
   const [paused, setPaused] = useState(false);
   const [adminPassword, setAdminPassword] = useState<string | null>(null);
   const [pauseError, setPauseError] = useState<string | null>(null);
+  const [tickError, setTickError] = useState<string | null>(null);
 
   const botsRef = useStickToBottom(bots.length);
   const chatRef = useStickToBottom(chat.length);
@@ -123,9 +124,14 @@ export default function Home() {
       if (document.visibilityState !== 'visible') return;
       try {
         const res = await fetch('/api/tick', { method: 'POST' });
-        const data = await res.json();
+        const data = await res.json().catch(() => ({ status: 'error', message: `Server error ${res.status}` }));
         if (data.status === 'bad_anthropic_key') setSetup('bad_anthropic_key');
-      } catch {}
+        if (data.status === 'error') setTickError(`The bots hit an error: ${data.message}`);
+        else if (data.status === 'no_reply') setTickError('A bot gave no reply this turn; trying again.');
+        else setTickError(null);
+      } catch {
+        setTickError('Could not reach the server.');
+      }
     };
     tick();
     const id = setInterval(tick, TICK_MS);
@@ -187,6 +193,7 @@ export default function Home() {
         </div>
         {setup && <div className="notice">{SETUP_NOTICES[setup] ?? setup}</div>}
         {pauseError && <div className="notice">{pauseError}</div>}
+        {tickError && !setup && <div className="notice">{tickError}</div>}
         {paused && !setup && <div className="notice">The bots are paused.</div>}
         <div className="scroll" ref={botsRef}>
           {bots.length === 0 && <p className="empty">Waiting for the bots to start…</p>}
