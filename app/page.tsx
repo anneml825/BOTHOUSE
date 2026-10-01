@@ -87,6 +87,8 @@ export default function Home() {
   const [adminPassword, setAdminPassword] = useState<string | null>(null);
   const [pauseError, setPauseError] = useState<string | null>(null);
   const [tickError, setTickError] = useState<string | null>(null);
+  const [stateError, setStateError] = useState<string | null>(null);
+  const [lastTick, setLastTick] = useState<string>('not called yet');
   const [generating, setGenerating] = useState(false);
   const [gapSeconds, setGapSeconds] = useState(30);
   const [now, setNow] = useState(() => Date.now());
@@ -105,15 +107,18 @@ export default function Home() {
     const load = async () => {
       try {
         const res = await fetch('/api/state', { cache: 'no-store' });
-        const data = await res.json();
+        const data = await res.json().catch(() => ({ error: `Server error ${res.status}` }));
         if (!alive) return;
+        setStateError(data.error ? `Could not load messages: ${data.error}` : null);
         setSetup((prev) => (prev === 'bad_anthropic_key' && !data.setup ? prev : data.setup ?? null));
         if (data.bots) setBots(data.bots);
         if (data.chat) setChat(data.chat);
         if (typeof data.paused === 'boolean') setPaused(data.paused);
         if (typeof data.generating === 'boolean') setGenerating(data.generating);
         if (typeof data.gapSeconds === 'number') setGapSeconds(data.gapSeconds);
-      } catch {}
+      } catch {
+        if (alive) setStateError('Could not load messages: server unreachable');
+      }
     };
     load();
     const id = setInterval(load, POLL_MS);
@@ -130,12 +135,14 @@ export default function Home() {
       try {
         const res = await fetch('/api/tick', { method: 'POST' });
         const data = await res.json().catch(() => ({ status: 'error', message: `Server error ${res.status}` }));
+        setLastTick(`${data.status}${data.message ? `: ${data.message}` : ''} (HTTP ${res.status})`);
         if (data.status === 'bad_anthropic_key') setSetup('bad_anthropic_key');
         if (data.status === 'error') setTickError(`The bots hit an error: ${data.message}`);
         else if (data.status === 'no_reply') setTickError('A bot gave no reply this turn; trying again.');
         else setTickError(null);
       } catch {
         setTickError('Could not reach the server.');
+        setLastTick('request failed');
       }
     };
     tick();
@@ -221,6 +228,7 @@ export default function Home() {
         </div>
         {setup && <div className="notice">{SETUP_NOTICES[setup] ?? setup}</div>}
         {pauseError && <div className="notice">{pauseError}</div>}
+        {stateError && <div className="notice">{stateError}</div>}
         {tickError && !setup && <div className="notice">{tickError}</div>}
         {paused && !setup && <div className="notice">The bots are paused.</div>}
         <div className="scroll" ref={botsRef}>
@@ -232,6 +240,7 @@ export default function Home() {
             </div>
           ))}
           {status && <p className="status">{status}</p>}
+          <p className="status diag">Server: {lastTick}</p>
         </div>
       </section>
 

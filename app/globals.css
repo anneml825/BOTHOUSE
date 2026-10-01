@@ -83,6 +83,8 @@ body {
 
 .status { color: var(--muted); font-size: 13px; font-style: italic; margin: 0; }
 
+.diag { margin-top: 12px; font-style: normal; font-family: ui-monospace, monospace; font-size: 12px; }
+
 .empty { color: var(--muted); text-align: center; margin-top: 32px; }
 
 .notice {
