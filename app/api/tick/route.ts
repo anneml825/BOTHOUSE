@@ -31,7 +31,8 @@ export async function POST() {
     .maybeSingle();
   if (latest.error && isMissingTable(latest.error)) return NextResponse.json({ status: 'missing_tables' });
   if (latest.data && now - Date.parse(latest.data.created_at) < GAP_MS) {
-    return NextResponse.json({ status: 'waiting' });
+    const secondsAgo = Math.round((now - Date.parse(latest.data.created_at)) / 1000);
+    return NextResponse.json({ status: 'waiting', message: `last bot message was ${secondsAgo}s ago` });
   }
 
   const claim = await db

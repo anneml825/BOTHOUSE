@@ -92,6 +92,8 @@ export default function Home() {
   const [generating, setGenerating] = useState(false);
   const [gapSeconds, setGapSeconds] = useState(30);
   const [now, setNow] = useState(() => Date.now());
+  // Server clock minus this device's clock, so the countdown matches the server
+  const [clockOffset, setClockOffset] = useState(0);
 
   const botsRef = useStickToBottom(bots.length);
   const chatRef = useStickToBottom(chat.length);
@@ -116,6 +118,7 @@ export default function Home() {
         if (typeof data.paused === 'boolean') setPaused(data.paused);
         if (typeof data.generating === 'boolean') setGenerating(data.generating);
         if (typeof data.gapSeconds === 'number') setGapSeconds(data.gapSeconds);
+        if (data.serverTime) setClockOffset(Date.parse(data.serverTime) - Date.now());
       } catch {
         if (alive) setStateError('Could not load messages: server unreachable');
       }
@@ -164,7 +167,7 @@ export default function Home() {
   const lastBot = bots[bots.length - 1];
   const nextSpeaker = lastBot?.author === 'A' ? 'B' : 'A';
   const secondsLeft = lastBot
-    ? Math.max(0, Math.ceil(gapSeconds - (now - Date.parse(lastBot.created_at)) / 1000))
+    ? Math.max(0, Math.ceil(gapSeconds - (now + clockOffset - Date.parse(lastBot.created_at)) / 1000))
     : 0;
   let status: string | null = null;
   if (lastBot && !paused && !setup) {

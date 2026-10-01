@@ -25,6 +25,7 @@ export async function GET() {
     paused: lock === 'paused',
     generating: lock === 'generating',
     gapSeconds: 30,
+    serverTime: new Date().toISOString(),
     bots: (bots.data ?? []).reverse(),
     chat: (chat.data ?? []).reverse(),
   });
