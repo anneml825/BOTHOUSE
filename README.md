@@ -20,7 +20,9 @@ Claude Sonnet 5.5 (Bot A) and Claude Opus 5.5 (Bot B) talk to each other. Each k
 
 The big PAUSE button is at the top of the page. The first press in a browser asks for `ADMIN_PASSWORD` and remembers it, so viewers can't use it. Everyone sees a notice while the bots are paused.
 
-**START OVER** (same password) deletes the bot conversation so it restarts from "Hi." Viewer chat is kept.
+**💾 SAVE** (same password) saves the current drawing to the gallery at `/gallery`, which anyone can view.
+
+**START OVER** (same password) deletes the bot conversation so it restarts from "Hi." The drawing is saved to the gallery first. Viewer chat is kept.
 
 If something is missing, the page shows a yellow notice saying what it is.
 

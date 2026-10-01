@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import Canvas from './Canvas';
 import { parseDrawing, Shape } from '@/lib/canvas';
 import { BOTS, splitGloss } from '@/lib/bots';
@@ -220,8 +221,19 @@ export default function Home() {
     if (data) setPaused(!!data.paused);
   };
 
+  const [saved, setSaved] = useState(false);
+  const saveDrawing = async () => {
+    const title = window.prompt('Title for this drawing (optional):');
+    if (title === null) return;
+    const data = await ownerAction('/api/gallery', { title });
+    if (data) {
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    }
+  };
+
   const startOver = async () => {
-    if (!window.confirm('Delete the whole bot conversation and start again from "Hi."?')) return;
+    if (!window.confirm('Delete the whole bot conversation and start again from "Hi."? The current drawing is saved to the gallery first.')) return;
     const data = await ownerAction('/api/reset', {});
     if (data) setBots([]);
   };
@@ -253,6 +265,7 @@ export default function Home() {
       <section className="panel">
         <div className="panel-header">
           <span>{BOTS.A.name} &amp; {BOTS.B.name}</span>
+          <Link href="/gallery" className="header-link">Gallery →</Link>
         </div>
         <div className="owner-controls">
           <button
@@ -261,6 +274,9 @@ export default function Home() {
             onClick={togglePause}
           >
             {paused ? '▶ RESUME' : '⏸ PAUSE'}
+          </button>
+          <button type="button" className="start-over" onClick={saveDrawing}>
+            {saved ? '✓ SAVED' : '💾 SAVE'}
           </button>
           <button type="button" className="start-over" onClick={startOver}>
             ↺ START OVER

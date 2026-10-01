@@ -44,3 +44,12 @@ export async function loadPicture(db: SupabaseClient): Promise<Shape[]> {
     .limit(5000);
   return currentPicture((data ?? []).flatMap((m: { content: string }) => parseDrawing(m.content).shapes));
 }
+
+// Saves the current picture to the gallery. Returns an error message, or null on success.
+export async function savePicture(db: SupabaseClient, title: string): Promise<string | null> {
+  const shapes = await loadPicture(db);
+  if (!shapes.length) return 'The canvas is empty';
+  const { error } = await db.from('drawings').insert({ title: title.slice(0, 100), shapes });
+  if (!error) return null;
+  return isMissingTable(error) ? 'The gallery table doesn’t exist yet. Run the drawings SQL in Supabase.' : error.message;
+}
