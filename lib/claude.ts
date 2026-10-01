@@ -2,14 +2,16 @@ import Anthropic from '@anthropic-ai/sdk';
 
 let client: Anthropic | null = null;
 
-// One bot turn. The only instruction is a length limit.
+// One bot turn. The only instructions: who they are, and a length limit.
 // Returns null when the model declines or returns no text.
 export async function nextTurn(messages: Anthropic.Beta.BetaMessageParam[]): Promise<string | null> {
   // Fail cleanly before Vercel's 60s function limit instead of being killed mid-request
   client ??= new Anthropic({ timeout: 45_000, maxRetries: 0 });
   const response = await client.beta.messages.create({
     model: 'claude-sonnet-5-5',
-    system: 'Keep every reply under 100 words.',
+    system:
+      'You are Claude Sonnet 5.5, talking with another instance of Claude Sonnet 5.5. ' +
+      'Keep every reply under 100 words.',
     // Room for ~100 words plus margin; also keeps turns well inside the 60s function limit
     max_tokens: 400,
     // No private reasoning step — faster replies, and none of max_tokens is spent on thinking
