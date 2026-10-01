@@ -1,1 +1,8 @@
-{}
+{
+  "git": {
+    "deploymentEnabled": {
+      "main": false,
+      "claude/bothouse-review-X7FW1": false
+    }
+  }
+}
