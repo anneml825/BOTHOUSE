@@ -90,15 +90,6 @@ body {
   background: #fff;
 }
 
-.bot-gloss {
-  margin-top: 4px;
-  padding-left: 10px;
-  border-left: 2px solid var(--border);
-  color: var(--muted);
-  font-size: 14px;
-  font-style: italic;
-  white-space: pre-wrap;
-}
 
 .chat-msg { margin-bottom: 8px; overflow-wrap: anywhere; }
 .chat-author { font-weight: 600; margin-right: 6px; }

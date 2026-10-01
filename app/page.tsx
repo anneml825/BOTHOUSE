@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Canvas from './Canvas';
 import { parseDrawing } from '@/lib/canvas';
-import { BOTS, splitGloss, isRedundantGloss } from '@/lib/bots';
+import { BOTS, splitGloss } from '@/lib/bots';
 
 interface Message {
   id: number;
@@ -280,7 +280,7 @@ export default function Home() {
             <div key={m.id} className="bot-msg">
               <div className={`bot-name ${m.author === 'A' ? 'bot-a' : 'bot-b'}`}>{botName(m.author)}</div>
               {(() => {
-                const { body, gloss } = splitGloss(m.content);
+                const { body } = splitGloss(m.content);
                 const { text, shapes: drawn } = parseDrawing(body);
                 return (
                   <>
@@ -288,7 +288,6 @@ export default function Home() {
                     {drawn.length > 0 && (
                       <div className="bot-drew">🎨 drew {drawn.length} {drawn.length === 1 ? 'thing' : 'things'}</div>
                     )}
-                    {gloss && !isRedundantGloss(text, gloss) && <div className="bot-gloss">{gloss}</div>}
                   </>
                 );
               })()}

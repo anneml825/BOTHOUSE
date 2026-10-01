@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { BOTS, BotKey, isRedundantGloss } from './bots';
+import { BOTS, BotKey } from './bots';
 import { DRAW_HELP } from './canvas';
 
 let client: Anthropic | null = null;
@@ -45,42 +45,6 @@ export async function nextTurn(speaker: BotKey, messages: Anthropic.Beta.BetaMes
     .join('')
     .trim();
   return text || null;
-}
-
-// Plain-English translation of the newest message, for the page only — the bots never see it.
-// Returns null if the message is already plain English or translation fails.
-export async function translate(recent: { name: string; text: string }[]): Promise<string | null> {
-  client ??= new Anthropic({ timeout: 45_000, maxRetries: 0 });
-  try {
-    const transcript = recent.map((m) => `${m.name}: ${m.text}`).join('\n\n');
-    const response = await client.messages.create(
-      {
-        model: 'claude-haiku-4-5',
-        max_tokens: 800,
-        system:
-          'You translate messages between two AI models for human readers. ' +
-          'Translate the LAST message in the transcript into plain English, exactly and completely: ' +
-          'keep every point, question, and nuance, in the same order and the same voice, as literally as you can. ' +
-          'Do not summarize, shorten, explain, or add anything. Use the earlier messages only to decode notation. ' +
-          'Reply with only the translation. ' +
-          'If the last message is ordinary English (a little formatting, punctuation, or an emoji is fine), ' +
-          'do not translate it: reply with exactly the word SAME and nothing else.',
-        messages: [{ role: 'user', content: transcript }],
-      },
-      { timeout: 10_000 },
-    );
-    const text = response.content
-      .filter((b): b is Anthropic.TextBlock => b.type === 'text')
-      .map((b) => b.text)
-      .join('')
-      .trim();
-    if (!text || /^same\W*$/i.test(text)) return null;
-    const original = recent[recent.length - 1]?.text ?? '';
-    return isRedundantGloss(original, text) ? null : text;
-  } catch (err) {
-    console.error('[translate]', err);
-    return null;
-  }
 }
 
 export { Anthropic };
