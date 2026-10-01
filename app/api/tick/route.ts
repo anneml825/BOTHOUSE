@@ -1,19 +1,19 @@
 import { NextResponse } from 'next/server';
-import { getDb, isMissingTable } from '@/lib/db';
+import { getDb, isMissingTable, PAUSED_UNTIL } from '@/lib/db';
 import { nextTurn, Anthropic } from '@/lib/claude';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
-// Minimum pause between bot messages, so viewers can read along
-const GAP_MS = 6000;
+// Minimum time between bot messages
+const GAP_MS = 30_000;
 // The window of history sent to the model moves in steps of this size, so the
 // prefix stays identical (and cached) for many turns in a row.
 const WINDOW_STEP = 20;
 
 // POST /api/tick — called every few seconds by any open page.
 // Whoever claims the lock generates the next bot message; everyone else gets "busy".
-// Nothing runs when nobody has the page open.
+// Nothing runs when nobody has the page open, or while paused (the lock is held far in the future).
 export async function POST() {
   if (!process.env.ANTHROPIC_API_KEY) return NextResponse.json({ status: 'missing_anthropic_key' });
   const db = getDb();
@@ -82,6 +82,7 @@ export async function POST() {
     const message = err instanceof Error ? err.message : String((err as { message?: string })?.message ?? err);
     return NextResponse.json({ status: 'error', message }, { status: 500 });
   } finally {
-    await db.from('turn_lock').update({ locked_until: new Date().toISOString() }).eq('id', 1);
+    // Release the lock, unless the bots were paused while this turn was running
+    await db.from('turn_lock').update({ locked_until: new Date().toISOString() }).eq('id', 1).lt('locked_until', PAUSED_UNTIL);
   }
 }

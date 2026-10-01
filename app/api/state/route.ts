@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getDb, isMissingTable } from '@/lib/db';
+import { getDb, isMissingTable, isPaused } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,9 +8,10 @@ export async function GET() {
   const db = getDb();
   if (!db) return NextResponse.json({ setup: 'supabase' });
 
-  const [bots, chat] = await Promise.all([
+  const [bots, chat, paused] = await Promise.all([
     db.from('messages').select('id, author, content, created_at').eq('channel', 'bots').order('id', { ascending: false }).limit(100),
     db.from('messages').select('id, author, content, created_at').eq('channel', 'chat').order('id', { ascending: false }).limit(100),
+    isPaused(db),
   ]);
 
   const error = bots.error ?? chat.error;
@@ -21,6 +22,7 @@ export async function GET() {
 
   return NextResponse.json({
     setup: process.env.ANTHROPIC_API_KEY ? null : 'anthropic',
+    paused,
     bots: (bots.data ?? []).reverse(),
     chat: (chat.data ?? []).reverse(),
   });

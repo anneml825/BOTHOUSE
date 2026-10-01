@@ -27,6 +27,29 @@ function loadUsername(): string {
   return `viewer${Math.floor(1000 + Math.random() * 9000)}`;
 }
 
+// The owner opens the site once with ?admin=PASSWORD; it's remembered in this browser
+function loadAdminPassword(): string | null {
+  try {
+    const url = new URL(window.location.href);
+    const fromUrl = url.searchParams.get('admin');
+    if (fromUrl) {
+      localStorage.setItem('adminPassword', fromUrl);
+      url.searchParams.delete('admin');
+      window.history.replaceState(null, '', url.toString());
+      return fromUrl;
+    }
+    return localStorage.getItem('adminPassword');
+  } catch {
+    return null;
+  }
+}
+
+function forgetAdminPassword() {
+  try {
+    localStorage.removeItem('adminPassword');
+  } catch {}
+}
+
 function saveUsername(name: string) {
   try {
     localStorage.setItem('username', name);
@@ -60,11 +83,17 @@ export default function Home() {
   const [username, setUsername] = useState('');
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
+  const [paused, setPaused] = useState(false);
+  const [adminPassword, setAdminPassword] = useState<string | null>(null);
+  const [pauseError, setPauseError] = useState<string | null>(null);
 
   const botsRef = useStickToBottom(bots.length);
   const chatRef = useStickToBottom(chat.length);
 
-  useEffect(() => setUsername(loadUsername()), []);
+  useEffect(() => {
+    setUsername(loadUsername());
+    setAdminPassword(loadAdminPassword());
+  }, []);
 
   // Poll for new messages
   useEffect(() => {
@@ -77,6 +106,7 @@ export default function Home() {
         setSetup((prev) => (prev === 'bad_anthropic_key' && !data.setup ? prev : data.setup ?? null));
         if (data.bots) setBots(data.bots);
         if (data.chat) setChat(data.chat);
+        if (typeof data.paused === 'boolean') setPaused(data.paused);
       } catch {}
     };
     load();
@@ -101,6 +131,26 @@ export default function Home() {
     const id = setInterval(tick, TICK_MS);
     return () => clearInterval(id);
   }, []);
+
+  const togglePause = async () => {
+    setPauseError(null);
+    try {
+      const res = await fetch('/api/pause', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: adminPassword, paused: !paused }),
+      });
+      const data = await res.json();
+      if (res.status === 401) {
+        forgetAdminPassword();
+        setAdminPassword(null);
+      }
+      if (!res.ok) throw new Error(data.error ?? 'Could not change pause');
+      setPaused(data.paused);
+    } catch (err) {
+      setPauseError(err instanceof Error ? err.message : 'Could not change pause');
+    }
+  };
 
   const send = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -127,8 +177,17 @@ export default function Home() {
   return (
     <main className="layout">
       <section className="panel">
-        <div className="panel-header">Bot A &amp; Bot B</div>
+        <div className="panel-header">
+          <span>Bot A &amp; Bot B</span>
+          {adminPassword && (
+            <button type="button" onClick={togglePause}>
+              {paused ? 'Resume' : 'Pause'}
+            </button>
+          )}
+        </div>
         {setup && <div className="notice">{SETUP_NOTICES[setup] ?? setup}</div>}
+        {pauseError && <div className="notice">{pauseError}</div>}
+        {paused && !setup && <div className="notice">The bots are paused.</div>}
         <div className="scroll" ref={botsRef}>
           {bots.length === 0 && <p className="empty">Waiting for the bots to start…</p>}
           {bots.map((m) => (
