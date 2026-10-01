@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { getDb, isMissingTable, getLockState } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
+export const revalidate = 0;
 
 // GET /api/state — latest bot conversation and viewer chat
 export async function GET() {

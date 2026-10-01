@@ -95,8 +95,8 @@ export default function Home() {
   // Server clock minus this device's clock, so the countdown matches the server
   const [clockOffset, setClockOffset] = useState(0);
 
-  const botsRef = useStickToBottom(bots.length);
-  const chatRef = useStickToBottom(chat.length);
+  const botsRef = useStickToBottom(bots[bots.length - 1]?.id);
+  const chatRef = useStickToBottom(chat[chat.length - 1]?.id);
 
   useEffect(() => {
     setUsername(loadUsername());

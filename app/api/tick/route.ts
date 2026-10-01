@@ -3,6 +3,8 @@ import { getDb, isMissingTable, PAUSED_UNTIL } from '@/lib/db';
 import { nextTurn, Anthropic } from '@/lib/claude';
 
 export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
+export const revalidate = 0;
 export const maxDuration = 60;
 
 // Minimum time between bot messages

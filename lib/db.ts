@@ -8,6 +8,8 @@ export function getDb(): SupabaseClient | null {
   if (!url || !key) return null;
   return createClient(url, key, {
     auth: { autoRefreshToken: false, persistSession: false },
+    // Next.js caches fetch() results by default; database reads must always be fresh
+    global: { fetch: (input, init) => fetch(input, { ...init, cache: 'no-store' }) },
   });
 }
 
