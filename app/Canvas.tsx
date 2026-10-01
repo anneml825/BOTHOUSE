@@ -1,11 +1,11 @@
-import { CANVAS_H, CANVAS_W, Shape } from '@/lib/canvas';
+import { CANVAS_H, CANVAS_W, Shape, currentPicture } from '@/lib/canvas';
 
 // Renders the shared picture. Every value is parsed and clamped in lib/canvas.ts.
 export default function Canvas({ shapes }: { shapes: Shape[] }) {
   return (
     <svg className="canvas" viewBox={`0 0 ${CANVAS_W} ${CANVAS_H}`} role="img" aria-label="The bots' shared drawing">
       <rect x={0} y={0} width={CANVAS_W} height={CANVAS_H} fill="#fff" />
-      {shapes.map((s, i) => {
+      {currentPicture(shapes).map((s, i) => {
         switch (s.kind) {
           case 'line':
             return (
@@ -47,6 +47,8 @@ export default function Canvas({ shapes }: { shapes: Shape[] }) {
                 {s.text}
               </text>
             );
+          default:
+            return null;
         }
       })}
     </svg>

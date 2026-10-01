@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getDb, isMissingTable, getLockState } from '@/lib/db';
+import { getDb, isMissingTable, getLockState, loadPicture } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
@@ -10,10 +10,11 @@ export async function GET() {
   const db = getDb();
   if (!db) return NextResponse.json({ setup: 'supabase' });
 
-  const [bots, chat, lock] = await Promise.all([
+  const [bots, chat, lock, picture] = await Promise.all([
     db.from('messages').select('id, author, content, created_at').eq('channel', 'bots').order('id', { ascending: false }).limit(100),
     db.from('messages').select('id, author, content, created_at').eq('channel', 'chat').order('id', { ascending: false }).limit(100),
     getLockState(db),
+    loadPicture(db),
   ]);
 
   const error = bots.error ?? chat.error;
@@ -28,6 +29,7 @@ export async function GET() {
     generating: lock === 'generating',
     gapSeconds: 30,
     serverTime: new Date().toISOString(),
+    picture,
     bots: (bots.data ?? []).reverse(),
     chat: (chat.data ?? []).reverse(),
   });

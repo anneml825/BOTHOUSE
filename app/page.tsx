@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Canvas from './Canvas';
-import { parseDrawing } from '@/lib/canvas';
+import { parseDrawing, Shape } from '@/lib/canvas';
 import { BOTS, splitGloss } from '@/lib/bots';
 
 interface Message {
@@ -95,6 +95,7 @@ export default function Home() {
   const [stateError, setStateError] = useState<string | null>(null);
   const [lastTick, setLastTick] = useState<string>('not called yet');
   const [generating, setGenerating] = useState(false);
+  const [picture, setPicture] = useState<Shape[]>([]);
   const [gapSeconds, setGapSeconds] = useState(30);
   const [now, setNow] = useState(() => Date.now());
   // Server clock minus this device's clock, so the countdown matches the server
@@ -120,6 +121,7 @@ export default function Home() {
         setSetup((prev) => (prev === 'bad_anthropic_key' && !data.setup ? prev : data.setup ?? null));
         if (data.bots) setBots(data.bots);
         if (data.chat) setChat(data.chat);
+        if (data.picture) setPicture(data.picture);
         if (typeof data.paused === 'boolean') setPaused(data.paused);
         if (typeof data.generating === 'boolean') setGenerating(data.generating);
         if (typeof data.gapSeconds === 'number') setGapSeconds(data.gapSeconds);
@@ -169,8 +171,6 @@ export default function Home() {
     return () => clearInterval(id);
   }, []);
 
-  // The picture is every drawing command from every bot message, in order
-  const shapes = useMemo(() => bots.flatMap((m) => parseDrawing(splitGloss(m.content).body).shapes), [bots]);
 
   const lastBot = bots[bots.length - 1];
   const nextSpeaker = lastBot?.author === 'A' ? 'B' : 'A';
@@ -272,7 +272,7 @@ export default function Home() {
         {tickError && !setup && <div className="notice">{tickError}</div>}
         {paused && !setup && <div className="notice">The bots are paused.</div>}
         <div className="canvas-wrap">
-          <Canvas shapes={shapes} />
+          <Canvas shapes={picture} />
         </div>
         <div className="scroll" ref={botsRef}>
           {bots.length === 0 && <p className="empty">Waiting for the bots to start…</p>}

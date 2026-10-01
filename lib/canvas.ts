@@ -10,7 +10,8 @@ export type Shape =
   | { kind: 'rect'; x: number; y: number; w: number; h: number; color: string; fill: boolean }
   | { kind: 'ellipse'; cx: number; cy: number; rx: number; ry: number; color: string; fill: boolean }
   | { kind: 'text'; x: number; y: number; color: string; size: number; text: string }
-  | { kind: 'path'; d: string; color: string; width: number; fill: string | null };
+  | { kind: 'path'; d: string; color: string; width: number; fill: string | null }
+  | { kind: 'clear' };
 
 // Explained to the bots in their instructions
 export const DRAW_HELP = `You share a ${CANVAS_W}x${CANVAS_H} canvas with a white background, like MS Paint. \
@@ -33,8 +34,11 @@ Tools:
 - pencil x1 y1 x2 y2 ... color [width] — straight segments between points
 - line x1 y1 x2 y2 color [width] / rect x y w h color [fill] / circle cx cy r color [fill] / \
 ellipse cx cy rx ry color [fill] / text x y color size words
-Colors are hex or color names. Nothing can be erased, but you can paint over things. \
-Up to ${MAX_COMMANDS_PER_MESSAGE} commands per turn.`;
+- eraser width x1 y1 x2 y2 ... — erase along a freehand stroke
+- erase x y w h — erase a rectangle
+- clear — wipe the whole canvas
+Colors are hex or color names. Up to ${MAX_COMMANDS_PER_MESSAGE} commands per turn. \
+Each turn you're shown an image of the canvas as it is right now.`;
 
 const DRAW_BLOCK = /```draw[^\n]*\n([\s\S]*?)(```|$)/g;
 
@@ -71,6 +75,19 @@ function parseLine(line: string): Shape | null {
   const tokens = trimmed.split(/\s+/);
   const cmd = tokens.shift()?.toLowerCase();
   if (!cmd) return null;
+
+  if (cmd === 'clear') return { kind: 'clear' };
+  if (cmd === 'erase') {
+    const n = tokens.filter(isNum).map(Number);
+    if (n.length < 4) return null;
+    return { kind: 'rect', x: clampX(n[0]), y: clampY(n[1]), w: Math.abs(clampX(n[2])), h: Math.abs(clampY(n[3])), color: '#ffffff', fill: true };
+  }
+  if (cmd === 'eraser') {
+    const n = tokens.filter(isNum).map(Number);
+    const width = n.length % 2 === 1 ? Math.max(1, Math.min(60, n.shift()!)) : 12;
+    const d = smoothPath(n.slice(0, 400).map((v, i) => (i % 2 ? clampY(v) : clampX(v))));
+    return d ? { kind: 'path', d, color: '#ffffff', width, fill: null } : null;
+  }
 
   // Color-first tools: brush color width points... / path color width [fill:color] d...
   if (cmd === 'brush' || cmd === 'path') {
@@ -135,4 +152,36 @@ export function parseDrawing(content: string): { text: string; shapes: Shape[] }
   }
   const text = content.replace(DRAW_BLOCK, '').replace(/\n{3,}/g, '\n\n').trim();
   return { text, shapes };
+}
+
+// The current picture: every shape from every message, starting after the most recent "clear"
+export function currentPicture(shapes: Shape[]): Shape[] {
+  let start = 0;
+  shapes.forEach((sh, i) => {
+    if (sh.kind === 'clear') start = i + 1;
+  });
+  return shapes.slice(start);
+}
+
+const esc = (t: string) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+// The picture as an SVG document, for rendering to an image on the server
+export function pictureToSvg(shapes: Shape[]): string {
+  const parts = currentPicture(shapes).map((sh) => {
+    switch (sh.kind) {
+      case 'line':
+        return `<polyline points="${sh.points.join(' ')}" fill="none" stroke="${esc(sh.color)}" stroke-width="${sh.width}" stroke-linecap="round" stroke-linejoin="round"/>`;
+      case 'rect':
+        return `<rect x="${sh.x}" y="${sh.y}" width="${sh.w}" height="${sh.h}" fill="${sh.fill ? esc(sh.color) : 'none'}" stroke="${esc(sh.color)}" stroke-width="2"/>`;
+      case 'ellipse':
+        return `<ellipse cx="${sh.cx}" cy="${sh.cy}" rx="${sh.rx}" ry="${sh.ry}" fill="${sh.fill ? esc(sh.color) : 'none'}" stroke="${esc(sh.color)}" stroke-width="2"/>`;
+      case 'path':
+        return `<path d="${esc(sh.d)}" fill="${sh.fill ? esc(sh.fill) : 'none'}" stroke="${sh.width > 0 ? esc(sh.color) : 'none'}" stroke-width="${sh.width}" stroke-linecap="round" stroke-linejoin="round"/>`;
+      case 'text':
+        return `<text x="${sh.x}" y="${sh.y}" fill="${esc(sh.color)}" font-size="${sh.size}" font-family="sans-serif">${esc(sh.text)}</text>`;
+      default:
+        return '';
+    }
+  });
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${CANVAS_W}" height="${CANVAS_H}" viewBox="0 0 ${CANVAS_W} ${CANVAS_H}"><rect width="${CANVAS_W}" height="${CANVAS_H}" fill="#fff"/>${parts.join('')}</svg>`;
 }

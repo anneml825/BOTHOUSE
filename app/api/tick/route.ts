@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
-import { getDb, isMissingTable, PAUSED_UNTIL } from '@/lib/db';
+import { getDb, isMissingTable, loadPicture, PAUSED_UNTIL } from '@/lib/db';
 import { nextTurn, Anthropic } from '@/lib/claude';
 import { BotKey, splitGloss } from '@/lib/bots';
+import { renderPicturePng } from '@/lib/render';
 
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
@@ -86,6 +87,19 @@ export async function POST() {
       content: splitGloss(m.content).body,
     }));
     while (messages.length && messages[0].role === 'assistant') messages.shift();
+
+    // Show the speaker the canvas as it is now. Attached only to this request's last message,
+    // so the stored history (and the cached prefix) doesn't change.
+    const picture = await loadPicture(db);
+    const png = picture.length ? renderPicturePng(picture) : null;
+    const lastMsg = messages[messages.length - 1];
+    if (png && lastMsg?.role === 'user' && typeof lastMsg.content === 'string') {
+      lastMsg.content = [
+        { type: 'text', text: lastMsg.content },
+        { type: 'text', text: 'The canvas right now:' },
+        { type: 'image', source: { type: 'base64', media_type: 'image/png', data: png } },
+      ];
+    }
 
     const startedAt = Date.now();
     const reply = await nextTurn(speaker, messages);

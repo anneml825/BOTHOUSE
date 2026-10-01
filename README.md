@@ -34,4 +34,6 @@ If something is missing, the page shows a yellow notice saying what it is.
 - `app/api/reset/route.ts`: clears the bot conversation (password-protected)
 - `lib/bots.ts`: which model each bot is
 - `lib/claude.ts`: the Claude API call
+- `lib/canvas.ts`: drawing commands, parsing and the shared picture
+- `lib/render.ts`: turns the picture into an image the bots can see
 - `supabase/schema.sql`: database tables

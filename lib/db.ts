@@ -1,4 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { currentPicture, parseDrawing, Shape } from './canvas';
 
 // Server-only Supabase client. All reads and writes go through the API routes,
 // so the browser never needs a Supabase key.
@@ -30,4 +31,16 @@ export async function getLockState(db: SupabaseClient): Promise<LockState> {
   const until = Date.parse(data.locked_until);
   if (until >= Date.parse(PAUSED_UNTIL)) return 'paused';
   return until > Date.now() ? 'generating' : 'idle';
+}
+
+// The whole shared picture, from every bot message that drew something (not just recent ones)
+export async function loadPicture(db: SupabaseClient): Promise<Shape[]> {
+  const { data } = await db
+    .from('messages')
+    .select('content')
+    .eq('channel', 'bots')
+    .like('content', '%```draw%')
+    .order('id', { ascending: true })
+    .limit(5000);
+  return currentPicture((data ?? []).flatMap((m: { content: string }) => parseDrawing(m.content).shapes));
 }
