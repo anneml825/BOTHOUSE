@@ -20,6 +20,20 @@ export async function POST() {
   if (!db) return NextResponse.json({ status: 'missing_supabase' });
 
   const now = Date.now();
+
+  // Cheap check first, so the lock is only taken when a bot is actually due to speak
+  const latest = await db
+    .from('messages')
+    .select('created_at')
+    .eq('channel', 'bots')
+    .order('id', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (latest.error && isMissingTable(latest.error)) return NextResponse.json({ status: 'missing_tables' });
+  if (latest.data && now - Date.parse(latest.data.created_at) < GAP_MS) {
+    return NextResponse.json({ status: 'waiting' });
+  }
+
   const claim = await db
     .from('turn_lock')
     .update({ locked_until: new Date(now + 55_000).toISOString() })

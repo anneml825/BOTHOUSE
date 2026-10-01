@@ -87,6 +87,9 @@ export default function Home() {
   const [adminPassword, setAdminPassword] = useState<string | null>(null);
   const [pauseError, setPauseError] = useState<string | null>(null);
   const [tickError, setTickError] = useState<string | null>(null);
+  const [generating, setGenerating] = useState(false);
+  const [gapSeconds, setGapSeconds] = useState(30);
+  const [now, setNow] = useState(() => Date.now());
 
   const botsRef = useStickToBottom(bots.length);
   const chatRef = useStickToBottom(chat.length);
@@ -108,6 +111,8 @@ export default function Home() {
         if (data.bots) setBots(data.bots);
         if (data.chat) setChat(data.chat);
         if (typeof data.paused === 'boolean') setPaused(data.paused);
+        if (typeof data.generating === 'boolean') setGenerating(data.generating);
+        if (typeof data.gapSeconds === 'number') setGapSeconds(data.gapSeconds);
       } catch {}
     };
     load();
@@ -135,8 +140,31 @@ export default function Home() {
     };
     tick();
     const id = setInterval(tick, TICK_MS);
+    // Resume right away when the tab comes back into view
+    document.addEventListener('visibilitychange', tick);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener('visibilitychange', tick);
+    };
+  }, []);
+
+  // One-second clock for the countdown
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
   }, []);
+
+  const lastBot = bots[bots.length - 1];
+  const nextSpeaker = lastBot?.author === 'A' ? 'B' : 'A';
+  const secondsLeft = lastBot
+    ? Math.max(0, Math.ceil(gapSeconds - (now - Date.parse(lastBot.created_at)) / 1000))
+    : 0;
+  let status: string | null = null;
+  if (lastBot && !paused && !setup) {
+    if (generating) status = `Bot ${nextSpeaker} is typing…`;
+    else if (secondsLeft > 0) status = `Bot ${nextSpeaker} replies in ${secondsLeft}s`;
+    else status = `Bot ${nextSpeaker} is about to reply…`;
+  }
 
   const togglePause = async () => {
     setPauseError(null);
@@ -203,6 +231,7 @@ export default function Home() {
               <div className="bot-text">{m.content}</div>
             </div>
           ))}
+          {status && <p className="status">{status}</p>}
         </div>
       </section>
 
