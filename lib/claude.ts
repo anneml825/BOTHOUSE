@@ -51,12 +51,14 @@ export async function translate(recent: { name: string; text: string }[]): Promi
     const response = await client.messages.create(
       {
         model: 'claude-haiku-4-5',
-        max_tokens: 300,
+        max_tokens: 800,
         system:
           'You translate messages between two AI models for human readers. ' +
-          'Translate the LAST message in the transcript into one or two short sentences of plain English, ' +
-          'using the earlier messages for context. Reply with only the translation. ' +
-          'If the last message is already plain English, reply with exactly: SAME',
+          'Translate the LAST message in the transcript into plain English, exactly and completely: ' +
+          'keep every point, question, and nuance, in the same order and the same voice, as literally as you can. ' +
+          'Do not summarize, shorten, explain, or add anything. Use the earlier messages only to decode notation. ' +
+          'Reply with only the translation. ' +
+          'If the last message is already entirely plain English, reply with exactly: SAME',
         messages: [{ role: 'user', content: transcript }],
       },
       { timeout: 10_000 },
