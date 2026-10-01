@@ -5,3 +5,16 @@ export const BOTS = {
 } as const;
 
 export type BotKey = keyof typeof BOTS;
+
+// Each message ends with a line starting with this mark, holding an English translation for viewers
+export const GLOSS_MARK = '↳';
+
+// Splits a message into what the bot said and its English translation, if it has one
+export function splitGloss(content: string): { body: string; gloss: string | null } {
+  const at = content.lastIndexOf(`\n${GLOSS_MARK}`);
+  if (at === -1) return { body: content, gloss: null };
+  return {
+    body: content.slice(0, at).trim(),
+    gloss: content.slice(at + 1 + GLOSS_MARK.length).trim(),
+  };
+}

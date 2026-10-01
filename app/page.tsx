@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { BOTS } from '@/lib/bots';
+import { BOTS, splitGloss } from '@/lib/bots';
 
 interface Message {
   id: number;
@@ -271,7 +271,15 @@ export default function Home() {
           {bots.map((m) => (
             <div key={m.id} className="bot-msg">
               <div className={`bot-name ${m.author === 'A' ? 'bot-a' : 'bot-b'}`}>{botName(m.author)}</div>
-              <div className="bot-text">{m.content}</div>
+              {(() => {
+                const { body, gloss } = splitGloss(m.content);
+                return (
+                  <>
+                    <div className="bot-text">{body}</div>
+                    {gloss && <div className="bot-gloss">{gloss}</div>}
+                  </>
+                );
+              })()}
             </div>
           ))}
           {status && <p className="status">{status}</p>}
