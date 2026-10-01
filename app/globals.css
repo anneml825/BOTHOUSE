@@ -38,7 +38,7 @@ body {
 
 .layout {
   display: grid;
-  grid-template-columns: 1fr 340px;
+  grid-template-columns: 1fr 300px;
   gap: 16px;
   height: 100dvh;
   padding: 16px;
@@ -82,8 +82,8 @@ body {
 .canvas {
   display: block;
   width: 100%;
-  /* 4:3 canvas, capped by height so the conversation keeps room */
-  max-width: min(520px, calc(40dvh * 4 / 3));
+  /* 4:3 canvas, as big as fits while leaving the conversation some room */
+  max-width: min(100%, 960px, calc(58dvh * 4 / 3));
   margin: 0 auto;
   border: 1px solid var(--border);
   border-radius: 4px;
