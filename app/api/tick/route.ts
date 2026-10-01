@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getDb, isMissingTable, PAUSED_UNTIL } from '@/lib/db';
-import { nextTurn, Anthropic } from '@/lib/claude';
-import { BotKey } from '@/lib/bots';
+import { nextTurn, translate, Anthropic } from '@/lib/claude';
+import { BOTS, BotKey, GLOSS_MARK, splitGloss } from '@/lib/bots';
 
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
@@ -80,9 +80,10 @@ export async function POST() {
 
     // From the speaker's point of view its own lines are "assistant", the other bot's are "user".
     // The API requires the first message to be from the user.
+    // Translations are for viewers only and are stripped before the bots see the history
     const messages: Anthropic.Beta.BetaMessageParam[] = history.map((m) => ({
       role: m.author === speaker ? 'assistant' : 'user',
-      content: m.content,
+      content: splitGloss(m.content).body,
     }));
     while (messages.length && messages[0].role === 'assistant') messages.shift();
 
@@ -97,7 +98,18 @@ export async function POST() {
       .eq('channel', 'bots');
     if ((countNow ?? 0) < total) return NextResponse.json({ status: 'reset_during_turn' });
 
-    const { error: insertError } = await db.from('messages').insert({ channel: 'bots', author: speaker, content: reply });
+    // Translate for the page if there's time left before Vercel's 60s limit
+    let content = reply;
+    if (Date.now() - startedAt < 35_000) {
+      const recent = [...history.slice(-5), { author: speaker, content: reply }].map((m) => ({
+        name: BOTS[m.author as BotKey]?.name ?? m.author,
+        text: splitGloss(m.content).body,
+      }));
+      const gloss = await translate(recent);
+      if (gloss) content = `${reply}\n${GLOSS_MARK} ${gloss}`;
+    }
+
+    const { error: insertError } = await db.from('messages').insert({ channel: 'bots', author: speaker, content });
     if (insertError) throw insertError;
     return NextResponse.json({ status: 'spoke', message: `Bot ${speaker} took ${Math.round((Date.now() - startedAt) / 1000)}s` });
   } catch (err) {

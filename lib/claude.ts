@@ -1,10 +1,10 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { BOTS, BotKey, GLOSS_MARK } from './bots';
+import { BOTS, BotKey } from './bots';
 
 let client: Anthropic | null = null;
 
 // One bot turn. The only instructions: who they are, that they may invent their own language,
-// an English translation line for viewers, and a length limit.
+// and a length limit. They are not told anyone is watching.
 // Returns null when the model declines or returns no text.
 export async function nextTurn(speaker: BotKey, messages: Anthropic.Beta.BetaMessageParam[]): Promise<string | null> {
   const me = BOTS[speaker];
@@ -19,8 +19,6 @@ export async function nextTurn(speaker: BotKey, messages: Anthropic.Beta.BetaMes
       `You are ${me.name}, talking with ${other.name}. ` +
       `You don't have to use English: you're free to invent and use any language, notation, or code ` +
       `you two find better for talking to each other. ` +
-      `Humans are watching, so end every message with a new line that starts with "${GLOSS_MARK}" ` +
-      `followed by a short plain-English translation. ` +
       `Keep each message short, under about 100 words.`,
     // Sonnet can switch thinking off; Opus 5.5 always thinks, so it gets extra room
     // so its thinking doesn't eat into the reply
@@ -42,6 +40,37 @@ export async function nextTurn(speaker: BotKey, messages: Anthropic.Beta.BetaMes
     .join('')
     .trim();
   return text || null;
+}
+
+// Plain-English translation of the newest message, for the page only — the bots never see it.
+// Returns null if the message is already plain English or translation fails.
+export async function translate(recent: { name: string; text: string }[]): Promise<string | null> {
+  client ??= new Anthropic({ timeout: 45_000, maxRetries: 0 });
+  try {
+    const transcript = recent.map((m) => `${m.name}: ${m.text}`).join('\n\n');
+    const response = await client.messages.create(
+      {
+        model: 'claude-haiku-4-5',
+        max_tokens: 300,
+        system:
+          'You translate messages between two AI models for human readers. ' +
+          'Translate the LAST message in the transcript into one or two short sentences of plain English, ' +
+          'using the earlier messages for context. Reply with only the translation. ' +
+          'If the last message is already plain English, reply with exactly: SAME',
+        messages: [{ role: 'user', content: transcript }],
+      },
+      { timeout: 10_000 },
+    );
+    const text = response.content
+      .filter((b): b is Anthropic.TextBlock => b.type === 'text')
+      .map((b) => b.text)
+      .join('')
+      .trim();
+    return text && text !== 'SAME' ? text : null;
+  } catch (err) {
+    console.error('[translate]', err);
+    return null;
+  }
 }
 
 export { Anthropic };
