@@ -13,7 +13,7 @@ export async function nextTurn(speaker: BotKey, messages: Anthropic.Beta.BetaMes
   const isSonnet = me.model === 'claude-sonnet-5-5';
 
   // Fail cleanly before Vercel's 60s function limit instead of being killed mid-request
-  client ??= new Anthropic({ timeout: 45_000, maxRetries: 0 });
+  client ??= new Anthropic({ timeout: 50_000, maxRetries: 0 });
   const response = await client.beta.messages.create({
     model: me.model,
     system:
@@ -27,7 +27,7 @@ export async function nextTurn(speaker: BotKey, messages: Anthropic.Beta.BetaMes
       `\nTake turns drawing the same picture together.`,
     // Sonnet can switch thinking off; Opus 5.5 always thinks, so it gets extra room
     // so its thinking doesn't eat into the reply. Both need room for drawing commands.
-    ...(isSonnet ? { thinking: { type: 'between_tools' as const }, max_tokens: 1500 } : { max_tokens: 3000 }),
+    ...(isSonnet ? { thinking: { type: 'between_tools' as const }, max_tokens: 2500 } : { max_tokens: 4000 }),
     output_config: { effort: 'low' },
     // Caches the conversation prefix so each turn only pays full price for the new message
     cache_control: { type: 'ephemeral' },
