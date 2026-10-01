@@ -89,6 +89,13 @@ export async function POST() {
     const reply = await nextTurn(messages);
     if (!reply) return NextResponse.json({ status: 'no_reply' });
 
+    // If the owner pressed Start over while this reply was being written, drop it
+    const { count: countNow } = await db
+      .from('messages')
+      .select('id', { count: 'exact', head: true })
+      .eq('channel', 'bots');
+    if ((countNow ?? 0) < total) return NextResponse.json({ status: 'reset_during_turn' });
+
     const { error: insertError } = await db.from('messages').insert({ channel: 'bots', author: speaker, content: reply });
     if (insertError) throw insertError;
     return NextResponse.json({ status: 'spoke', message: `Bot ${speaker} took ${Math.round((Date.now() - startedAt) / 1000)}s` });

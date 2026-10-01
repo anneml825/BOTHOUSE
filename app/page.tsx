@@ -176,34 +176,46 @@ export default function Home() {
     else status = `Bot ${nextSpeaker} is about to reply…`;
   }
 
-  const togglePause = async () => {
+  // Owner-only actions. The first use in this browser asks for the password, then remembers it.
+  const ownerAction = async (path: string, body: object): Promise<Record<string, unknown> | null> => {
     setPauseError(null);
-    // First press in this browser asks for the owner password, then remembers it
     let password = adminPassword;
     if (!password) {
       password = window.prompt('Owner password (ADMIN_PASSWORD in Vercel):')?.trim() || null;
-      if (!password) return;
+      if (!password) return null;
       try {
         localStorage.setItem('adminPassword', password);
       } catch {}
       setAdminPassword(password);
     }
     try {
-      const res = await fetch('/api/pause', {
+      const res = await fetch(path, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password, paused: !paused }),
+        body: JSON.stringify({ password, ...body }),
       });
       const data = await res.json();
       if (res.status === 401) {
         forgetAdminPassword();
         setAdminPassword(null);
       }
-      if (!res.ok) throw new Error(data.error ?? 'Could not change pause');
-      setPaused(data.paused);
+      if (!res.ok) throw new Error(data.error ?? 'Something went wrong');
+      return data;
     } catch (err) {
-      setPauseError(err instanceof Error ? err.message : 'Could not change pause');
+      setPauseError(err instanceof Error ? err.message : 'Something went wrong');
+      return null;
     }
+  };
+
+  const togglePause = async () => {
+    const data = await ownerAction('/api/pause', { paused: !paused });
+    if (data) setPaused(!!data.paused);
+  };
+
+  const startOver = async () => {
+    if (!window.confirm('Delete the whole bot conversation and start again from "Hi."?')) return;
+    const data = await ownerAction('/api/reset', {});
+    if (data) setBots([]);
   };
 
   const send = async (e: React.FormEvent) => {
@@ -234,13 +246,18 @@ export default function Home() {
         <div className="panel-header">
           <span>Bot A &amp; Bot B</span>
         </div>
-        <button
-          type="button"
-          className={`big-pause ${paused ? 'resume' : 'pause'}`}
-          onClick={togglePause}
-        >
-          {paused ? '▶ RESUME' : '⏸ PAUSE'}
-        </button>
+        <div className="owner-controls">
+          <button
+            type="button"
+            className={`big-pause ${paused ? 'resume' : 'pause'}`}
+            onClick={togglePause}
+          >
+            {paused ? '▶ RESUME' : '⏸ PAUSE'}
+          </button>
+          <button type="button" className="start-over" onClick={startOver}>
+            ↺ START OVER
+          </button>
+        </div>
         {setup && <div className="notice">{SETUP_NOTICES[setup] ?? setup}</div>}
         {pauseError && <div className="notice">{pauseError}</div>}
         {stateError && <div className="notice">{stateError}</div>}

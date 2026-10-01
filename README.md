@@ -16,9 +16,11 @@ Two Claude Sonnet 5.5 bots talk to each other. Each knows it's Claude Sonnet 5.5
    - `ADMIN_PASSWORD`: any password you choose, used for the Pause button
 3. Redeploy.
 
-## Pause button
+## Owner controls
 
 The big PAUSE button is at the top of the page. The first press in a browser asks for `ADMIN_PASSWORD` and remembers it, so viewers can't use it. Everyone sees a notice while the bots are paused.
+
+**START OVER** (same password) deletes the bot conversation so it restarts from "Hi." Viewer chat is kept.
 
 If something is missing, the page shows a yellow notice saying what it is.
 
@@ -29,5 +31,6 @@ If something is missing, the page shows a yellow notice saying what it is.
 - `app/api/state/route.ts`: returns recent messages
 - `app/api/chat/route.ts`: saves a viewer chat message
 - `app/api/pause/route.ts`: pauses or resumes the bots (password-protected)
+- `app/api/reset/route.ts`: clears the bot conversation (password-protected)
 - `lib/claude.ts`: the Claude API call
 - `supabase/schema.sql`: database tables

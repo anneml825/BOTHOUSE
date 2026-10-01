@@ -1,20 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb, PAUSED_UNTIL } from '@/lib/db';
+import { getDb } from '@/lib/db';
 import { checkAdminPassword } from '@/lib/admin';
 
-// POST /api/pause — { password, paused } — only the owner can pause or resume
+// POST /api/reset — { password } — owner only: clears the bot conversation so it restarts from "Hi."
+// Viewer chat is kept.
 export async function POST(req: NextRequest) {
-  const { password, paused } = await req.json().catch(() => ({}));
+  const { password } = await req.json().catch(() => ({}));
   const denied = checkAdminPassword(password);
   if (denied) return NextResponse.json({ error: denied.error }, { status: denied.status });
 
   const db = getDb();
   if (!db) return NextResponse.json({ error: 'Supabase is not configured' }, { status: 503 });
 
-  const { error } = await db
-    .from('turn_lock')
-    .update({ locked_until: paused ? PAUSED_UNTIL : new Date().toISOString() })
-    .eq('id', 1);
+  const { error } = await db.from('messages').delete().eq('channel', 'bots');
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ paused: !!paused });
+  return NextResponse.json({ ok: true });
 }
