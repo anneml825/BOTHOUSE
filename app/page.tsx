@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { BOTS, splitGloss } from '@/lib/bots';
+import { BOTS, splitGloss, isRedundantGloss } from '@/lib/bots';
 
 interface Message {
   id: number;
@@ -276,7 +276,7 @@ export default function Home() {
                 return (
                   <>
                     <div className="bot-text">{body}</div>
-                    {gloss && <div className="bot-gloss">{gloss}</div>}
+                    {gloss && !isRedundantGloss(body, gloss) && <div className="bot-gloss">{gloss}</div>}
                   </>
                 );
               })()}

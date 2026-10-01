@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { BOTS, BotKey } from './bots';
+import { BOTS, BotKey, isRedundantGloss } from './bots';
 
 let client: Anthropic | null = null;
 
@@ -58,7 +58,8 @@ export async function translate(recent: { name: string; text: string }[]): Promi
           'keep every point, question, and nuance, in the same order and the same voice, as literally as you can. ' +
           'Do not summarize, shorten, explain, or add anything. Use the earlier messages only to decode notation. ' +
           'Reply with only the translation. ' +
-          'If the last message is already entirely plain English, reply with exactly: SAME',
+          'If the last message is ordinary English (a little formatting, punctuation, or an emoji is fine), ' +
+          'do not translate it: reply with exactly the word SAME and nothing else.',
         messages: [{ role: 'user', content: transcript }],
       },
       { timeout: 10_000 },
@@ -68,7 +69,9 @@ export async function translate(recent: { name: string; text: string }[]): Promi
       .map((b) => b.text)
       .join('')
       .trim();
-    return text && text !== 'SAME' ? text : null;
+    if (!text || /^same\W*$/i.test(text)) return null;
+    const original = recent[recent.length - 1]?.text ?? '';
+    return isRedundantGloss(original, text) ? null : text;
   } catch (err) {
     console.error('[translate]', err);
     return null;
