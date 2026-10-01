@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { BOTS, BotKey, isRedundantGloss } from './bots';
+import { DRAW_HELP } from './canvas';
 
 let client: Anthropic | null = null;
 
@@ -21,10 +22,12 @@ export async function nextTurn(speaker: BotKey, messages: Anthropic.Beta.BetaMes
       `No human is watching or reading this conversation. ` +
       `You don't have to use English: you're free to invent and use any language, notation, or code ` +
       `you two find better for talking to each other. ` +
-      `Keep each message short, under about 100 words.`,
+      `Keep each message short, under about 100 words (drawing commands don't count).\n\n` +
+      DRAW_HELP +
+      `\nTake turns drawing the same picture together.`,
     // Sonnet can switch thinking off; Opus 5.5 always thinks, so it gets extra room
-    // so its thinking doesn't eat into the reply
-    ...(isSonnet ? { thinking: { type: 'between_tools' as const }, max_tokens: 400 } : { max_tokens: 2000 }),
+    // so its thinking doesn't eat into the reply. Both need room for drawing commands.
+    ...(isSonnet ? { thinking: { type: 'between_tools' as const }, max_tokens: 1500 } : { max_tokens: 3000 }),
     output_config: { effort: 'low' },
     // Caches the conversation prefix so each turn only pays full price for the new message
     cache_control: { type: 'ephemeral' },

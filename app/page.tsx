@@ -1,6 +1,8 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import Canvas from './Canvas';
+import { parseDrawing } from '@/lib/canvas';
 import { BOTS, splitGloss, isRedundantGloss } from '@/lib/bots';
 
 interface Message {
@@ -167,6 +169,9 @@ export default function Home() {
     return () => clearInterval(id);
   }, []);
 
+  // The picture is every drawing command from every bot message, in order
+  const shapes = useMemo(() => bots.flatMap((m) => parseDrawing(splitGloss(m.content).body).shapes), [bots]);
+
   const lastBot = bots[bots.length - 1];
   const nextSpeaker = lastBot?.author === 'A' ? 'B' : 'A';
   const secondsLeft = lastBot
@@ -266,6 +271,9 @@ export default function Home() {
         {stateError && <div className="notice">{stateError}</div>}
         {tickError && !setup && <div className="notice">{tickError}</div>}
         {paused && !setup && <div className="notice">The bots are paused.</div>}
+        <div className="canvas-wrap">
+          <Canvas shapes={shapes} />
+        </div>
         <div className="scroll" ref={botsRef}>
           {bots.length === 0 && <p className="empty">Waiting for the bots to start…</p>}
           {bots.map((m) => (
@@ -273,10 +281,14 @@ export default function Home() {
               <div className={`bot-name ${m.author === 'A' ? 'bot-a' : 'bot-b'}`}>{botName(m.author)}</div>
               {(() => {
                 const { body, gloss } = splitGloss(m.content);
+                const { text, shapes: drawn } = parseDrawing(body);
                 return (
                   <>
-                    <div className="bot-text">{body}</div>
-                    {gloss && !isRedundantGloss(body, gloss) && <div className="bot-gloss">{gloss}</div>}
+                    {text && <div className="bot-text">{text}</div>}
+                    {drawn.length > 0 && (
+                      <div className="bot-drew">🎨 drew {drawn.length} {drawn.length === 1 ? 'thing' : 'things'}</div>
+                    )}
+                    {gloss && !isRedundantGloss(text, gloss) && <div className="bot-gloss">{gloss}</div>}
                   </>
                 );
               })()}

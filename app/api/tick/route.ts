@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getDb, isMissingTable, PAUSED_UNTIL } from '@/lib/db';
 import { nextTurn, translate, Anthropic } from '@/lib/claude';
 import { BOTS, BotKey, GLOSS_MARK, splitGloss } from '@/lib/bots';
+import { parseDrawing } from '@/lib/canvas';
 
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
@@ -101,11 +102,12 @@ export async function POST() {
     // Translate for the page if there's time left before Vercel's 60s limit
     let content = reply;
     if (Date.now() - startedAt < 35_000) {
+      // Translate only what they said, not their drawing commands
       const recent = [...history.slice(-5), { author: speaker, content: reply }].map((m) => ({
         name: BOTS[m.author as BotKey]?.name ?? m.author,
-        text: splitGloss(m.content).body,
+        text: parseDrawing(splitGloss(m.content).body).text,
       }));
-      const gloss = await translate(recent);
+      const gloss = recent[recent.length - 1].text ? await translate(recent) : null;
       if (gloss) content = `${reply}\n${GLOSS_MARK} ${gloss}`;
     }
 
