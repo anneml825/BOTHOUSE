@@ -178,11 +178,21 @@ export default function Home() {
 
   const togglePause = async () => {
     setPauseError(null);
+    // First press in this browser asks for the owner password, then remembers it
+    let password = adminPassword;
+    if (!password) {
+      password = window.prompt('Owner password (ADMIN_PASSWORD in Vercel):')?.trim() || null;
+      if (!password) return;
+      try {
+        localStorage.setItem('adminPassword', password);
+      } catch {}
+      setAdminPassword(password);
+    }
     try {
       const res = await fetch('/api/pause', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password: adminPassword, paused: !paused }),
+        body: JSON.stringify({ password, paused: !paused }),
       });
       const data = await res.json();
       if (res.status === 401) {
@@ -223,12 +233,14 @@ export default function Home() {
       <section className="panel">
         <div className="panel-header">
           <span>Bot A &amp; Bot B</span>
-          {adminPassword && (
-            <button type="button" onClick={togglePause}>
-              {paused ? 'Resume' : 'Pause'}
-            </button>
-          )}
         </div>
+        <button
+          type="button"
+          className={`big-pause ${paused ? 'resume' : 'pause'}`}
+          onClick={togglePause}
+        >
+          {paused ? '▶ RESUME' : '⏸ PAUSE'}
+        </button>
         {setup && <div className="notice">{SETUP_NOTICES[setup] ?? setup}</div>}
         {pauseError && <div className="notice">{pauseError}</div>}
         {stateError && <div className="notice">{stateError}</div>}

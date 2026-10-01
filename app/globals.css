@@ -138,7 +138,17 @@ button {
 
 button:disabled { opacity: 0.4; cursor: default; }
 
-.panel-header button { padding: 4px 12px; font-size: 13px; }
+.big-pause {
+  margin: 12px 16px 0;
+  padding: 14px;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: #fff;
+  border-radius: 8px;
+}
+.big-pause.pause { background: #dc2626; }
+.big-pause.resume { background: #16a34a; }
 
 @media (max-width: 760px) {
   .layout {
