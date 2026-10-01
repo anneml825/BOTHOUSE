@@ -2,8 +2,8 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Two Bots',
-  description: 'Two AI bots talking to each other, with a chat for the people watching.',
+  title: 'Sonnet & Opus',
+  description: 'Claude Sonnet 5.5 and Claude Opus 5.5 talking to each other, with a chat for the people watching.',
 };
 
 export const viewport: Viewport = {

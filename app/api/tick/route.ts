@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getDb, isMissingTable, PAUSED_UNTIL } from '@/lib/db';
 import { nextTurn, Anthropic } from '@/lib/claude';
+import { BotKey } from '@/lib/bots';
 
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
@@ -75,7 +76,7 @@ export async function POST() {
     const last = history[history.length - 1];
     if (now - Date.parse(last.created_at) < GAP_MS) return NextResponse.json({ status: 'waiting' });
 
-    const speaker = last.author === 'A' ? 'B' : 'A';
+    const speaker: BotKey = last.author === 'A' ? 'B' : 'A';
 
     // From the speaker's point of view its own lines are "assistant", the other bot's are "user".
     // The API requires the first message to be from the user.
@@ -86,7 +87,7 @@ export async function POST() {
     while (messages.length && messages[0].role === 'assistant') messages.shift();
 
     const startedAt = Date.now();
-    const reply = await nextTurn(messages);
+    const reply = await nextTurn(speaker, messages);
     if (!reply) return NextResponse.json({ status: 'no_reply' });
 
     // If the owner pressed Start over while this reply was being written, drop it

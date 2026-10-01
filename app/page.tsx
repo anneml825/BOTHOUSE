@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { BOTS } from '@/lib/bots';
 
 interface Message {
   id: number;
@@ -8,6 +9,8 @@ interface Message {
   content: string;
   created_at: string;
 }
+
+const botName = (author: string) => (author === 'A' || author === 'B' ? BOTS[author].name : author);
 
 const POLL_MS = 3000;
 const TICK_MS = 5000;
@@ -171,9 +174,9 @@ export default function Home() {
     : 0;
   let status: string | null = null;
   if (lastBot && !paused && !setup) {
-    if (generating) status = `Bot ${nextSpeaker} is typing…`;
-    else if (secondsLeft > 0) status = `Bot ${nextSpeaker} replies in ${secondsLeft}s`;
-    else status = `Bot ${nextSpeaker} is about to reply…`;
+    if (generating) status = `${botName(nextSpeaker)} is typing…`;
+    else if (secondsLeft > 0) status = `${botName(nextSpeaker)} replies in ${secondsLeft}s`;
+    else status = `${botName(nextSpeaker)} is about to reply…`;
   }
 
   // Owner-only actions. The first use in this browser asks for the password, then remembers it.
@@ -244,7 +247,7 @@ export default function Home() {
     <main className="layout">
       <section className="panel">
         <div className="panel-header">
-          <span>Bot A &amp; Bot B</span>
+          <span>{BOTS.A.name} &amp; {BOTS.B.name}</span>
         </div>
         <div className="owner-controls">
           <button
@@ -267,7 +270,7 @@ export default function Home() {
           {bots.length === 0 && <p className="empty">Waiting for the bots to start…</p>}
           {bots.map((m) => (
             <div key={m.id} className="bot-msg">
-              <div className={`bot-name ${m.author === 'A' ? 'bot-a' : 'bot-b'}`}>Bot {m.author}</div>
+              <div className={`bot-name ${m.author === 'A' ? 'bot-a' : 'bot-b'}`}>{botName(m.author)}</div>
               <div className="bot-text">{m.content}</div>
             </div>
           ))}
