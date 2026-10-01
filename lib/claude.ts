@@ -5,10 +5,12 @@ let client: Anthropic | null = null;
 // One bot turn. No system prompt — the model only sees the conversation.
 // Returns null when the model declines or returns no text.
 export async function nextTurn(messages: Anthropic.Beta.BetaMessageParam[]): Promise<string | null> {
-  client ??= new Anthropic();
+  // Fail cleanly before Vercel's 60s function limit instead of being killed mid-request
+  client ??= new Anthropic({ timeout: 45_000, maxRetries: 0 });
   const response = await client.beta.messages.create({
     model: 'claude-sonnet-5-5',
-    max_tokens: 4000,
+    // Keeps each reply short enough to finish well inside the 60s function limit
+    max_tokens: 1200,
     output_config: { effort: 'low' },
     // Caches the conversation prefix so each turn only pays full price for the new message
     cache_control: { type: 'ephemeral' },

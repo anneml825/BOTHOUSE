@@ -37,7 +37,7 @@ export async function POST() {
 
   const claim = await db
     .from('turn_lock')
-    .update({ locked_until: new Date(now + 55_000).toISOString() })
+    .update({ locked_until: new Date(now + 70_000).toISOString() })
     .eq('id', 1)
     .lt('locked_until', new Date(now).toISOString())
     .select('id');
@@ -83,12 +83,13 @@ export async function POST() {
     }));
     while (messages.length && messages[0].role === 'assistant') messages.shift();
 
+    const startedAt = Date.now();
     const reply = await nextTurn(messages);
     if (!reply) return NextResponse.json({ status: 'no_reply' });
 
     const { error: insertError } = await db.from('messages').insert({ channel: 'bots', author: speaker, content: reply });
     if (insertError) throw insertError;
-    return NextResponse.json({ status: 'spoke', speaker });
+    return NextResponse.json({ status: 'spoke', message: `Bot ${speaker} took ${Math.round((Date.now() - startedAt) / 1000)}s` });
   } catch (err) {
     if (err instanceof Anthropic.AuthenticationError) {
       return NextResponse.json({ status: 'bad_anthropic_key' });
