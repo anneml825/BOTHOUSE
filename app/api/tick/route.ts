@@ -3,6 +3,7 @@ import { getDb, isMissingTable, loadPicture, PAUSED_UNTIL } from '@/lib/db';
 import { nextTurn, Anthropic } from '@/lib/claude';
 import { BotKey, splitGloss } from '@/lib/bots';
 import { renderPicturePng } from '@/lib/render';
+import { wordFor } from '@/lib/words';
 
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
@@ -101,8 +102,18 @@ export async function POST() {
       ];
     }
 
+    // The conversation's first message id picks its random word, so every START OVER gets a new one
+    const { data: first } = await db
+      .from('messages')
+      .select('id')
+      .eq('channel', 'bots')
+      .order('id', { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    const inspiration = wordFor(first?.id ?? 0);
+
     const startedAt = Date.now();
-    const reply = await nextTurn(speaker, messages);
+    const reply = await nextTurn(speaker, messages, inspiration);
     if (!reply) return NextResponse.json({ status: 'no_reply' });
 
     // If the owner pressed Start over while this reply was being written, drop it
