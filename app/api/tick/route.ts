@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { getDb, isMissingTable, loadPicture, PAUSED_UNTIL } from '@/lib/db';
+import { getDb, isMissingTable, loadPaint, PAUSED_UNTIL } from '@/lib/db';
 import { nextTurn, Anthropic } from '@/lib/claude';
 import { BotKey, splitGloss } from '@/lib/bots';
-import { renderPicturePng } from '@/lib/render';
+import { renderPaintPng } from '@/lib/render';
 import { wordFor } from '@/lib/words';
 
 export const dynamic = 'force-dynamic';
@@ -91,8 +91,8 @@ export async function POST() {
 
     // Show the speaker the canvas as it is now. Attached only to this request's last message,
     // so the stored history (and the cached prefix) doesn't change.
-    const picture = await loadPicture(db);
-    const png = picture.length ? renderPicturePng(picture) : null;
+    const paint = await loadPaint(db);
+    const png = paint.length ? renderPaintPng(paint) : null;
     const lastMsg = messages[messages.length - 1];
     if (png && lastMsg?.role === 'user' && typeof lastMsg.content === 'string') {
       lastMsg.content = [

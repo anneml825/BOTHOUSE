@@ -1,5 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { currentPicture, parseDrawing, Shape } from './canvas';
+import { parsePaint, sinceLastClear } from './paint';
 
 // Server-only Supabase client. All reads and writes go through the API routes,
 // so the browser never needs a Supabase key.
@@ -33,23 +33,23 @@ export async function getLockState(db: SupabaseClient): Promise<LockState> {
   return until > Date.now() ? 'generating' : 'idle';
 }
 
-// The whole shared picture, from every bot message that drew something (not just recent ones)
-export async function loadPicture(db: SupabaseClient): Promise<Shape[]> {
+// The whole painting: every paint command since the last "clear", from every bot message
+export async function loadPaint(db: SupabaseClient): Promise<string[]> {
   const { data } = await db
     .from('messages')
     .select('content')
     .eq('channel', 'bots')
-    .like('content', '%```draw%')
+    .like('content', '%```paint%')
     .order('id', { ascending: true })
     .limit(5000);
-  return currentPicture((data ?? []).flatMap((m: { content: string }) => parseDrawing(m.content).shapes));
+  return sinceLastClear((data ?? []).flatMap((m: { content: string }) => parsePaint(m.content).commands));
 }
 
-// Saves the current picture to the gallery. Returns an error message, or null on success.
+// Saves the current painting to the gallery. Returns an error message, or null on success.
 export async function savePicture(db: SupabaseClient, title: string): Promise<string | null> {
-  const shapes = await loadPicture(db);
-  if (!shapes.length) return 'The canvas is empty';
-  const { error } = await db.from('drawings').insert({ title: title.slice(0, 100), shapes });
+  const paint = await loadPaint(db);
+  if (!paint.length) return 'The canvas is empty';
+  const { error } = await db.from('drawings').insert({ title: title.slice(0, 100), shapes: { paint } });
   if (!error) return null;
   return isMissingTable(error) ? 'The gallery table doesn’t exist yet. Run the drawings SQL in Supabase.' : error.message;
 }

@@ -3,12 +3,14 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Canvas from '../Canvas';
+import PaintCanvas from '../PaintCanvas';
 import { Shape } from '@/lib/canvas';
 
 interface Drawing {
   id: number;
   title: string;
-  shapes: Shape[];
+  // Older drawings are vector shapes; newer ones are paint commands
+  shapes: Shape[] | { paint: string[] };
   created_at: string;
 }
 
@@ -42,7 +44,7 @@ export default function Gallery() {
       <div className="gallery-grid">
         {drawings?.map((d) => (
           <figure key={d.id} className="gallery-item">
-            <Canvas shapes={d.shapes} />
+            {Array.isArray(d.shapes) ? <Canvas shapes={d.shapes} /> : <PaintCanvas commands={d.shapes.paint ?? []} />}
             <figcaption>
               <strong>{d.title || `Drawing #${d.id}`}</strong>
               <span>{new Date(d.created_at).toLocaleString()}</span>

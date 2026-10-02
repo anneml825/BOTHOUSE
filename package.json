@@ -9,7 +9,6 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.131.0",
-    "@resvg/resvg-js": "^2.6.2",
     "@supabase/supabase-js": "^2.48.1",
     "next": "14.2.29",
     "react": "^18.3.1",
