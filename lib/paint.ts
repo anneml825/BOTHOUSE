@@ -4,34 +4,44 @@
 
 export const PAINT_W = 800;
 export const PAINT_H = 600;
-const MAX_COMMANDS_PER_MESSAGE = 100;
+const MAX_COMMANDS_PER_MESSAGE = 150;
 const MAX_POINTS = 600;
+// How different two touching pixels can be and still count as the same area for fill/gradient
+const FILL_TOLERANCE = 24;
 
 // Explained to the bots in their instructions
-export const PAINT_HELP = `You share an ${PAINT_W}x${PAINT_H} pixel canvas that works like MS Paint, starting white. \
-(0,0) is the top-left corner. Everything is drawn freehand, the way a person drags a mouse in Paint: \
-there are no shape tools. Outline things with brush or pencil strokes that use many points \
-(10 or more per stroke, following the contour), close the outline, then fill it with the bucket. \
-Layer strokes for detail, use the spray can for shading and texture. \
+export const PAINT_HELP = `You share an ${PAINT_W}x${PAINT_H} pixel canvas, starting white. (0,0) is the top-left corner. \
+Aim for realistic painting, the way a skilled painter works: get proportion and perspective right, \
+decide where the light comes from, and build form with light, shadow and soft value transitions rather than \
+flat colors and outlines. Work in layers: block in large shapes and base colors, then shade and blend with the \
+airbrush, gradients and smudge, then refine details and highlights. Each turn, look at the canvas and improve \
+what is already there before adding anything new. Everything is drawn freehand; there are no shape tools. \
 On your turn, paint by putting a block like this anywhere in your message, one tool use per line:
 \`\`\`paint
-brush #2b2b2b 4 300 260 318 232 345 214 380 206 418 210 450 226 470 252 474 284 462 314 436 336 400 346 362 342 330 326 308 300 300 270 300 260
-fill #e8a33d 390 280
-brush #6b3f1f 3 330 300 350 312 372 318 394 318 416 312 436 300
-pencil black 360 250 364 246 369 248 372 253
+gradient #1e3c72 #f2a65a 400 300 400 0 400 380
+brush #3a2a1e 3 300 260 318 232 345 214 380 206 418 210 450 226 470 252 474 284 462 314 436 336 400 346 362 342 330 326 308 300 300 270 300 260
+gradient #f4c27a #8a4b1c 390 280 340 230 450 330
+airbrush #000000 40 0.25 440 300 450 270 430 240
+airbrush #ffffff 18 0.5 350 240 360 232 372 230
+smudge 10 330 300 360 320 400 326 440 310
+pencil #2b2b2b 360 250 364 246 369 248 372 253
 spray #4a7c3a 18 50 520 110 508 170 515 230 505 290 512 350 500
-curve navy 3 500 300 540 220 640 220 680 300
 eraser 12 650 420 690 430 730 425 760 440
 \`\`\`
-Tools (COLOR is a hex like #ff8800 or a name like red, navy, skyblue; SIZE is the thickness in pixels):
-- brush COLOR SIZE x1 y1 x2 y2 x3 y3 ... — a freehand brush stroke through the points, like dragging the mouse
+Tools (COLOR is a hex like #ff8800 or a name like red, navy, skyblue; SIZE is in pixels):
+- brush COLOR SIZE x1 y1 x2 y2 ... — a solid freehand brush stroke through the points (use many points)
+- airbrush COLOR SIZE OPACITY x1 y1 x2 y2 ... — soft-edged, see-through stroke for shading, glow, blending \
+and atmosphere. SIZE is the radius, OPACITY from 0.05 (faint glaze) to 1 (strong). Layer several faint passes.
+- gradient COLOR1 COLOR2 x y x1 y1 x2 y2 — fills the area of one color around (x, y) with a smooth blend \
+from COLOR1 at (x1,y1) to COLOR2 at (x2,y2), for skies, rounded forms and light falloff
+- smudge SIZE x1 y1 x2 y2 ... — blurs and blends whatever is under the stroke, to soften edges and mix colors
 - pencil COLOR x1 y1 x2 y2 ... — a 1-pixel freehand line, for fine detail and hatching
-- spray COLOR SIZE x1 y1 x2 y2 ... — spray can along the path; SIZE is the spray radius
+- spray COLOR SIZE x1 y1 x2 y2 ... — grainy spray can along the path, for texture (foliage, stone, grain)
 - fill COLOR x y — paint bucket: fills the area of one color around (x, y); outlines must be closed or it leaks
-- curve COLOR SIZE x1 y1 cx1 cy1 cx2 cy2 x2 y2 — one smooth bend from (x1,y1) to (x2,y2), pulled toward the two control points
-- eraser SIZE x1 y1 x2 y2 ... — erase along a stroke
+- curve COLOR SIZE x1 y1 cx1 cy1 cx2 cy2 x2 y2 — one smooth bend from (x1,y1) to (x2,y2)
+- eraser SIZE x1 y1 x2 y2 ... — erase back to white along a stroke
 - clear — wipe the whole canvas
-There is no text tool and no rectangle, ellipse or straight-line tool. Up to ${MAX_COMMANDS_PER_MESSAGE} lines per turn. \
+There is no text tool and no shape tools. Up to ${MAX_COMMANDS_PER_MESSAGE} lines per turn. \
 Each turn you're shown an image of the canvas as it is right now.`;
 
 type RGB = [number, number, number];
@@ -45,6 +55,9 @@ type Op =
   | { t: 'curve'; c: RGB; size: number; pts: number[] }
   | { t: 'rect'; c: RGB; size: number; x: number; y: number; w: number; h: number; filled: boolean }
   | { t: 'ellipse'; c: RGB; size: number; cx: number; cy: number; rx: number; ry: number; filled: boolean }
+  | { t: 'airbrush'; c: RGB; size: number; opacity: number; pts: number[] }
+  | { t: 'gradient'; c1: RGB; c2: RGB; x: number; y: number; pts: number[] }
+  | { t: 'smudge'; size: number; pts: number[] }
   | { t: 'clear' };
 
 // The classic Paint palette plus common names
@@ -94,6 +107,22 @@ export function parseOp(line: string): Op | null {
     return pts.length >= 2 ? { t: 'brush', c: [255, 255, 255], size, pts } : null;
   }
 
+  if (tool === 'smudge') {
+    const n = tokens.filter(isNum).map(Number);
+    if (n.length < 3) return null;
+    const size = clampSize(n.shift()!, 60);
+    const pts = n.slice(0, MAX_POINTS * 2 - (n.length % 2)).map(coord);
+    return pts.length >= 2 ? { t: 'smudge', size, pts } : null;
+  }
+
+  if (tool === 'gradient') {
+    const c1 = parseColor(tokens.shift());
+    const c2 = parseColor(tokens.shift());
+    const n = tokens.filter(isNum).map(Number);
+    if (!c1 || !c2 || n.length < 6) return null;
+    return { t: 'gradient', c1, c2, x: Math.round(n[0]), y: Math.round(n[1]), pts: n.slice(2, 6).map(coord) };
+  }
+
   const c = parseColor(tokens.shift());
   if (!c) return null;
   const filled = tokens.some((t) => t.toLowerCase() === 'filled' || t.toLowerCase() === 'fill');
@@ -112,6 +141,15 @@ export function parseOp(line: string): Op | null {
       const pts = even(n);
       if (pts.length < 2) return null;
       return tool === 'brush' ? { t: 'brush', c, size, pts, seed: hash(line) } : { t: 'spray', c, size, pts, seed: hash(line) };
+    }
+    case 'airbrush': {
+      if (n.length < 4) return null;
+      const size = clampSize(n.shift()!, 120);
+      let opacity = n.shift()!;
+      if (opacity > 1) opacity /= 100; // accept 30 as 30%
+      opacity = Math.max(0.02, Math.min(1, opacity));
+      const pts = even(n);
+      return pts.length >= 2 ? { t: 'airbrush', c, size, opacity, pts } : null;
     }
     case 'fill':
       return n.length >= 2 ? { t: 'fill', c, x: Math.round(n[0]), y: Math.round(n[1]) } : null;
@@ -217,34 +255,55 @@ class Pixels {
     }
   }
 
-  // Paint bucket: 4-connected flood fill of the exact color under (x, y)
-  fill(x: number, y: number, c: RGB) {
-    if (x < 0 || y < 0 || x >= PAINT_W || y >= PAINT_H) return;
+  // Mixes color c over the pixel with strength a (0..1)
+  blend(x: number, y: number, c: RGB, a: number) {
+    if (x < 0 || y < 0 || x >= PAINT_W || y >= PAINT_H || a <= 0) return;
+    const i = (y * PAINT_W + x) * 4;
     const d = this.data;
-    const start = (y * PAINT_W + x) * 4;
-    const tr = d[start], tg = d[start + 1], tb = d[start + 2];
-    if (tr === c[0] && tg === c[1] && tb === c[2]) return;
-    // Each pixel is recolored as it's pushed, so it's pushed at most once and the stack can't overflow
+    d[i] = d[i] + (c[0] - d[i]) * a;
+    d[i + 1] = d[i + 1] + (c[1] - d[i + 1]) * a;
+    d[i + 2] = d[i + 2] + (c[2] - d[i + 2]) * a;
+  }
+
+  // Every pixel connected to (x, y) through gradual color changes, as a 0/1 mask.
+  // Smooth gradients and soft shading count as one area; a real edge (like an outline) stops it.
+  region(x: number, y: number): Uint8Array | null {
+    if (x < 0 || y < 0 || x >= PAINT_W || y >= PAINT_H) return null;
+    const d = this.data;
+    const seen = new Uint8Array(PAINT_W * PAINT_H);
     const stack = new Int32Array(PAINT_W * PAINT_H);
     let top = 0;
-    const push = (p: number) => {
-      const i = p * 4;
-      if (d[i] !== tr || d[i + 1] !== tg || d[i + 2] !== tb) return;
-      d[i] = c[0]; d[i + 1] = c[1]; d[i + 2] = c[2];
-      stack[top++] = p;
-    };
-    push(y * PAINT_W + x);
+    const close = (a: number, b: number) =>
+      Math.abs(d[a] - d[b]) <= FILL_TOLERANCE &&
+      Math.abs(d[a + 1] - d[b + 1]) <= FILL_TOLERANCE &&
+      Math.abs(d[a + 2] - d[b + 2]) <= FILL_TOLERANCE;
+    const start = y * PAINT_W + x;
+    seen[start] = 1;
+    stack[top++] = start;
     while (top > 0) {
       const p = stack[--top];
       const px = p % PAINT_W;
-      if (px > 0) push(p - 1);
-      if (px < PAINT_W - 1) push(p + 1);
-      if (p >= PAINT_W) push(p - PAINT_W);
-      if (p < PAINT_W * (PAINT_H - 1)) push(p + PAINT_W);
+      const neighbors = [px > 0 ? p - 1 : -1, px < PAINT_W - 1 ? p + 1 : -1, p - PAINT_W, p + PAINT_W];
+      for (const q of neighbors) {
+        if (q < 0 || q >= seen.length || seen[q] || !close(p * 4, q * 4)) continue;
+        seen[q] = 1;
+        stack[top++] = q;
+      }
+    }
+    return seen;
+  }
+
+  // Paint bucket: fills the area around (x, y), following gradual color changes
+  fill(x: number, y: number, c: RGB) {
+    const mask = this.region(x, y);
+    if (!mask) return;
+    for (let p = 0; p < mask.length; p++) {
+      if (!mask[p]) continue;
+      const i = p * 4;
+      this.data[i] = c[0]; this.data[i + 1] = c[1]; this.data[i + 2] = c[2];
     }
   }
 }
-
 // Points along a smooth curve through the given points (Catmull-Rom), so drags look like real strokes
 function smoothPoints(pts: number[]): number[] {
   const p: [number, number][] = [];
@@ -358,6 +417,102 @@ function apply(px: Pixels, op: Op) {
     }
     case 'fill':
       return px.fill(op.x, op.y, op.c);
+    case 'airbrush': {
+      // Coverage is the strongest falloff any dab gives a pixel, then blended once,
+      // so overlapping dabs within one stroke don't stack into a solid line
+      const s = smoothPoints(op.pts);
+      const r = op.size;
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      for (let i = 0; i + 1 < s.length; i += 2) {
+        minX = Math.min(minX, s[i]); maxX = Math.max(maxX, s[i]);
+        minY = Math.min(minY, s[i + 1]); maxY = Math.max(maxY, s[i + 1]);
+      }
+      const x0 = Math.max(0, Math.floor(minX - r)), x1 = Math.min(PAINT_W - 1, Math.ceil(maxX + r));
+      const y0 = Math.max(0, Math.floor(minY - r)), y1 = Math.min(PAINT_H - 1, Math.ceil(maxY + r));
+      if (x1 < x0 || y1 < y0) return;
+      const bw = x1 - x0 + 1;
+      const cover = new Float32Array(bw * (y1 - y0 + 1));
+      const dab = (cx: number, cy: number) => {
+        for (let yy = Math.max(y0, Math.floor(cy - r)); yy <= Math.min(y1, Math.ceil(cy + r)); yy++) {
+          for (let xx = Math.max(x0, Math.floor(cx - r)); xx <= Math.min(x1, Math.ceil(cx + r)); xx++) {
+            const dist = Math.hypot(xx - cx, yy - cy) / r;
+            if (dist >= 1) continue;
+            const f = (1 - dist) * (1 - dist);
+            const k = (yy - y0) * bw + (xx - x0);
+            if (f > cover[k]) cover[k] = f;
+          }
+        }
+      };
+      if (s.length === 2) dab(s[0], s[1]);
+      for (let i = 0; i + 3 < s.length; i += 2) {
+        const dist = Math.hypot(s[i + 2] - s[i], s[i + 3] - s[i + 1]);
+        const steps = Math.max(1, Math.ceil(dist / Math.max(1, r / 4)));
+        for (let k = 0; k <= steps; k++) dab(s[i] + ((s[i + 2] - s[i]) * k) / steps, s[i + 1] + ((s[i + 3] - s[i + 1]) * k) / steps);
+      }
+      for (let k = 0; k < cover.length; k++) {
+        if (cover[k] > 0) px.blend(x0 + (k % bw), y0 + Math.floor(k / bw), op.c, cover[k] * op.opacity);
+      }
+      return;
+    }
+    case 'gradient': {
+      const mask = px.region(op.x, op.y);
+      if (!mask) return;
+      const [ax, ay, bx, by] = op.pts;
+      const vx = bx - ax, vy = by - ay;
+      const len2 = vx * vx + vy * vy || 1;
+      for (let p = 0; p < mask.length; p++) {
+        if (!mask[p]) continue;
+        const x = p % PAINT_W, y = Math.floor(p / PAINT_W);
+        const t = Math.max(0, Math.min(1, ((x - ax) * vx + (y - ay) * vy) / len2));
+        px.set(x, y, [
+          op.c1[0] + (op.c2[0] - op.c1[0]) * t,
+          op.c1[1] + (op.c2[1] - op.c1[1]) * t,
+          op.c1[2] + (op.c2[2] - op.c1[2]) * t,
+        ]);
+      }
+      return;
+    }
+    case 'smudge': {
+      // Box-blur everything under the stroke (two passes), like dragging a finger through wet paint
+      const s = smoothPoints(op.pts);
+      const r = op.size;
+      const mask = new Uint8Array(PAINT_W * PAINT_H);
+      const mark = (cx: number, cy: number) => {
+        for (let yy = Math.max(0, Math.floor(cy - r)); yy <= Math.min(PAINT_H - 1, Math.ceil(cy + r)); yy++) {
+          for (let xx = Math.max(0, Math.floor(cx - r)); xx <= Math.min(PAINT_W - 1, Math.ceil(cx + r)); xx++) {
+            if (Math.hypot(xx - cx, yy - cy) <= r) mask[yy * PAINT_W + xx] = 1;
+          }
+        }
+      };
+      if (s.length === 2) mark(s[0], s[1]);
+      for (let i = 0; i + 3 < s.length; i += 2) {
+        const dist = Math.hypot(s[i + 2] - s[i], s[i + 3] - s[i + 1]);
+        const steps = Math.max(1, Math.ceil(dist / Math.max(1, r / 2)));
+        for (let k = 0; k <= steps; k++) mark(s[i] + ((s[i + 2] - s[i]) * k) / steps, s[i + 1] + ((s[i + 3] - s[i + 1]) * k) / steps);
+      }
+      const k = Math.max(1, Math.min(4, Math.round(r / 5)));
+      for (let pass = 0; pass < 2; pass++) {
+        const src = px.data.slice();
+        for (let p = 0; p < mask.length; p++) {
+          if (!mask[p]) continue;
+          const x = p % PAINT_W, y = Math.floor(p / PAINT_W);
+          let sr = 0, sg = 0, sb = 0, count = 0;
+          for (let dy = -k; dy <= k; dy++) {
+            const yy = y + dy;
+            if (yy < 0 || yy >= PAINT_H) continue;
+            for (let dx = -k; dx <= k; dx++) {
+              const xx = x + dx;
+              if (xx < 0 || xx >= PAINT_W) continue;
+              const i = (yy * PAINT_W + xx) * 4;
+              sr += src[i]; sg += src[i + 1]; sb += src[i + 2]; count++;
+            }
+          }
+          const i = p * 4;
+          px.data[i] = sr / count; px.data[i + 1] = sg / count; px.data[i + 2] = sb / count;
+        }
+      }
+      return;
+    }
     case 'line':
       return op.size === 1
         ? px.pencil(op.pts[0], op.pts[1], op.pts[2], op.pts[3], op.c)

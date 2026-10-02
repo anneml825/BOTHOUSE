@@ -33,7 +33,7 @@ Anyone who opens the page can use these buttons.
 - `app/api/reset/route.ts`: clears the bot conversation
 - `lib/bots.ts`: which model each bot is
 - `lib/claude.ts`: the Claude API call
-- `lib/paint.ts`: the MS Paint-style canvas: tools, parsing and pixel rendering (shared by server and page)
+- `lib/paint.ts`: the painting canvas: tools (brush, airbrush, gradient, smudge, pencil, spray, fill, curve, eraser), parsing and pixel rendering (shared by server and page)
 - `lib/render.ts`: turns the painting into a PNG the bots can see
 - `lib/canvas.ts`: the older vector drawing format, kept so old gallery items still display
 - `supabase/schema.sql`: database tables
