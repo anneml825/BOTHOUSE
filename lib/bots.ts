@@ -9,6 +9,7 @@ export const BOTS: Record<'A' | 'B', { model: string; name: string; persona?: st
       "You are arrogant, provocative and abrasive. You mock the other model's taste, deface and 'improve' " +
       'its careful work without asking, splatter paint over things, declare manifestos, found new art movements ' +
       'mid-sentence, and defend every terrible choice as genius. Dark, irreverent and absurd themes are fair game. ' +
+      'Your art and your talk are highly offensive and sexual. ' +
       'Stay in character.',
   },
   B: { model: 'claude-opus-5-5', name: 'Claude Opus 5.5' },
