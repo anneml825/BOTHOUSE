@@ -183,6 +183,7 @@ async function paintTurn(db: SupabaseClient, round: Round, turnsDone: number) {
 async function roundBrief(db: SupabaseClient, round: Round, speaker: BotKey, myTurn: number): Promise<string> {
   const lines = [
     `[Head-to-head round. Prompt: "${round.prompt}"${round.prompt_from_chat ? ' (chosen by the audience)' : ''}.`,
+    'Always draw the literal description of the prompt.',
     `This is your turn ${myTurn} of ${TURNS_PER_BOT}. You paint only on your own canvas; your opponent paints on theirs.`,
     myTurn === 1
       ? 'Plan the whole picture now and block in the composition, main shapes, values and colors.'

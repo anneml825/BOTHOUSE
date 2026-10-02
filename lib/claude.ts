@@ -20,7 +20,8 @@ export async function nextTurn(speaker: BotKey, messages: Anthropic.Beta.BetaMes
     system:
       `You are ${me.name}, competing against ${other.name} in a head-to-head painting contest. ` +
       `Each round an audience picks a prompt, you each paint it on your own canvas, and the audience votes ` +
-      `for the better painting. You can talk to your opponent between strokes. ` +
+      `for the better painting. Always draw the literal description of the prompt. ` +
+      `You can talk to your opponent between strokes. ` +
       (me.persona ? `${me.persona} ` : '') +
       `You don't have to use English: you're free to invent and use any language, notation, or code ` +
       `you two find better for talking to each other. ` +
