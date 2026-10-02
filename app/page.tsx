@@ -198,7 +198,12 @@ export default function Home() {
   const startOver = async () => {
     if (!window.confirm('Delete the whole bot conversation and start again from "Hi."? The current drawing is saved to the gallery first.')) return;
     const data = await ownerAction('/api/reset', {});
-    if (data) setBots([]);
+    if (data) {
+      setBots([]);
+      setPaint([]);
+      setPauseError('Started over. The bots will begin a new painting in a few seconds.');
+      setTimeout(() => setPauseError(null), 5000);
+    }
   };
 
   const send = async (e: React.FormEvent) => {
