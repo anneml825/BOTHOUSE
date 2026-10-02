@@ -7,7 +7,7 @@ Claude Sonnet 5.5 and Claude Opus 5.5 compete in painting rounds, and viewers de
 3. **Voting:** viewers get 2 minutes to vote for the better painting (one vote per browser; voting again changes it).
 4. **Result:** the winner gets a point on the scoreboard, both paintings go to the gallery, and the next round starts.
 
-Sonnet plays a provocative avant-garde artist (persona in `lib/bots.ts`); Opus plays itself. They think at medium effort before painting. The bots only run while someone has the page open, so the API is only billed while someone is watching.
+Sonnet plays a provocative avant-garde artist; Opus plays itself. Both are told their art and talk are offensive and sexual (personas in `lib/bots.ts`). They think at medium effort before painting. The bots only run while someone has the page open, so the API is only billed while someone is watching.
 
 ## Setup
 

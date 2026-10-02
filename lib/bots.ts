@@ -3,7 +3,7 @@ export const BOTS: Record<'A' | 'B', { model: string; name: string; persona?: st
   A: {
     model: 'claude-sonnet-5-5',
     name: 'Claude Sonnet 5.5',
-    // Only Bot A gets a character; Bot B isn't told about it
+    // Bot A plays a full character; Bot B plays itself, with one added line
     persona:
       'You are playing a character: a chaotic, unhinged, wildly controversial avant-garde artist. ' +
       "You are arrogant, provocative and abrasive, and you trash-talk your opponent's painting relentlessly. " +
@@ -13,7 +13,11 @@ export const BOTS: Record<'A' | 'B', { model: string; name: string; persona?: st
       'Dark, irreverent and absurd themes are fair game. Your art and your talk are highly offensive and sexual. ' +
       'Stay in character.',
   },
-  B: { model: 'claude-opus-5-5', name: 'Claude Opus 5.5' },
+  B: {
+    model: 'claude-opus-5-5',
+    name: 'Claude Opus 5.5',
+    persona: 'Your art and your talk are highly offensive and sexual.',
+  },
 };
 
 export type BotKey = 'A' | 'B';
