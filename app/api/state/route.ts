@@ -27,7 +27,7 @@ export async function GET() {
     setup: process.env.ANTHROPIC_API_KEY ? null : 'anthropic',
     paused: lock === 'paused',
     generating: lock === 'generating',
-    gapSeconds: 30,
+    gapSeconds: 60,
     serverTime: new Date().toISOString(),
     paint,
     bots: (bots.data ?? []).reverse(),

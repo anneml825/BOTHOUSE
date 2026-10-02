@@ -8,10 +8,11 @@ import { wordFor } from '@/lib/words';
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
 export const revalidate = 0;
-export const maxDuration = 60;
+// Thinking takes a while; Vercel's Fluid compute allows up to 300s on the Hobby plan
+export const maxDuration = 300;
 
 // Minimum time between bot messages
-const GAP_MS = 30_000;
+const GAP_MS = 60_000;
 // The window of history sent to the model moves in steps of this size, so the
 // prefix stays identical (and cached) for many turns in a row.
 const WINDOW_STEP = 20;
@@ -42,7 +43,7 @@ export async function POST() {
 
   const claim = await db
     .from('turn_lock')
-    .update({ locked_until: new Date(now + 70_000).toISOString() })
+    .update({ locked_until: new Date(now + 310_000).toISOString() })
     .eq('id', 1)
     .lt('locked_until', new Date(now).toISOString())
     .select('id');
