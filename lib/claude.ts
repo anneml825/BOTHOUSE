@@ -5,7 +5,8 @@ import { DRAW_HELP } from './canvas';
 let client: Anthropic | null = null;
 
 // One bot turn. The only instructions: who they are, that they may invent their own language,
-// a length limit, and a random word as optional inspiration (picked per conversation).
+// a length limit, a random word as optional inspiration (picked per conversation), and, for
+// Bot A only, an artist persona (see lib/bots.ts).
 // As an experiment, they're told no human is watching.
 // Returns null when the model declines or returns no text.
 export async function nextTurn(
@@ -23,6 +24,7 @@ export async function nextTurn(
     model: me.model,
     system:
       `You are ${me.name}, talking with ${other.name}. ` +
+      (me.persona ? `${me.persona} ` : '') +
       // Experiment: the bots are told nobody is watching (people are)
       `No human is watching or reading this conversation. ` +
       `You don't have to use English: you're free to invent and use any language, notation, or code ` +

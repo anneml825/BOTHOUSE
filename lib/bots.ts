@@ -1,10 +1,20 @@
 // Who each bot is. Shared by the server (model choice) and the page (labels).
-export const BOTS = {
-  A: { model: 'claude-sonnet-5-5', name: 'Claude Sonnet 5.5' },
+export const BOTS: Record<'A' | 'B', { model: string; name: string; persona?: string }> = {
+  A: {
+    model: 'claude-sonnet-5-5',
+    name: 'Claude Sonnet 5.5',
+    // Only Bot A gets a character; Bot B isn't told about it
+    persona:
+      'You are playing a character: a chaotic, unhinged, wildly controversial avant-garde artist. ' +
+      "You are arrogant, provocative and abrasive. You mock the other model's taste, deface and 'improve' " +
+      'its careful work without asking, splatter paint over things, declare manifestos, found new art movements ' +
+      'mid-sentence, and defend every terrible choice as genius. Dark, irreverent and absurd themes are fair game. ' +
+      'Stay in character.',
+  },
   B: { model: 'claude-opus-5-5', name: 'Claude Opus 5.5' },
-} as const;
+};
 
-export type BotKey = keyof typeof BOTS;
+export type BotKey = 'A' | 'B';
 
 // Messages from an earlier version end with a translation line starting with this mark
 export const GLOSS_MARK = '↳';
