@@ -30,3 +30,27 @@ create table if not exists drawings (
 );
 
 alter table drawings enable row level security;
+
+-- Head-to-head rounds and viewer votes
+create table if not exists rounds (
+  id bigint generated always as identity primary key,
+  prompt text not null,
+  prompt_from_chat boolean not null default false,
+  start_message_id bigint not null default 0,
+  status text not null default 'painting' check (status in ('painting', 'voting', 'done')),
+  voting_ends_at timestamptz,
+  winner text,
+  created_at timestamptz not null default now(),
+  finished_at timestamptz
+);
+
+create table if not exists votes (
+  round_id bigint not null references rounds(id) on delete cascade,
+  voter text not null,
+  choice text not null check (choice in ('A', 'B')),
+  created_at timestamptz not null default now(),
+  primary key (round_id, voter)
+);
+
+alter table rounds enable row level security;
+alter table votes enable row level security;

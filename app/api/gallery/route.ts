@@ -1,5 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getDb, isMissingTable, savePicture } from '@/lib/db';
+import { NextResponse } from 'next/server';
+import { getDb, isMissingTable } from '@/lib/db';
+import { currentRound, saveRoundPaintings } from '@/lib/rounds';
 
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
@@ -21,14 +22,16 @@ export async function GET() {
   return NextResponse.json({ drawings: data ?? [] });
 }
 
-// POST /api/gallery — { title } — saves the current canvas
-export async function POST(req: NextRequest) {
-  const { title } = await req.json().catch(() => ({}));
-
+// POST /api/gallery — saves both bots' paintings from the current round
+export async function POST() {
   const db = getDb();
   if (!db) return NextResponse.json({ error: 'Supabase is not configured' }, { status: 503 });
 
-  const problem = await savePicture(db, String(title ?? '').trim());
+  const { round, missing } = await currentRound(db);
+  if (missing) return NextResponse.json({ error: 'The rounds table doesn’t exist yet. Run the rounds SQL in Supabase.' }, { status: 400 });
+  if (!round) return NextResponse.json({ error: 'Nothing has been painted yet' }, { status: 400 });
+
+  const problem = await saveRoundPaintings(db, round);
   if (problem) return NextResponse.json({ error: problem }, { status: 400 });
   return NextResponse.json({ ok: true });
 }

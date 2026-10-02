@@ -33,23 +33,17 @@ export async function getLockState(db: SupabaseClient): Promise<LockState> {
   return until > Date.now() ? 'generating' : 'idle';
 }
 
-// The whole painting: every paint command since the last "clear", from every bot message
-export async function loadPaint(db: SupabaseClient): Promise<string[]> {
+// One bot's painting: its paint commands since its last "clear".
+// afterId limits it to messages after that id (the start of the current round).
+export async function loadPaint(db: SupabaseClient, opts: { author: string; afterId: number }): Promise<string[]> {
   const { data } = await db
     .from('messages')
     .select('content')
     .eq('channel', 'bots')
+    .eq('author', opts.author)
+    .gt('id', opts.afterId)
     .or('content.like.*```paint*,content.like.*```draw*')
     .order('id', { ascending: true })
     .limit(5000);
   return sinceLastClear((data ?? []).flatMap((m: { content: string }) => parsePaint(m.content).commands));
-}
-
-// Saves the current painting to the gallery. Returns an error message, or null on success.
-export async function savePicture(db: SupabaseClient, title: string): Promise<string | null> {
-  const paint = await loadPaint(db);
-  if (!paint.length) return 'The canvas is empty';
-  const { error } = await db.from('drawings').insert({ title: title.slice(0, 100), shapes: { paint } });
-  if (!error) return null;
-  return isMissingTable(error) ? 'The gallery table doesn’t exist yet. Run the drawings SQL in Supabase.' : error.message;
 }

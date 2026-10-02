@@ -10,7 +10,7 @@ const MAX_POINTS = 600;
 const FILL_TOLERANCE = 24;
 
 // Explained to the bots in their instructions
-export const PAINT_HELP = `You share an ${PAINT_W}x${PAINT_H} pixel canvas, starting white. (0,0) is the top-left corner. \
+export const PAINT_HELP = `You have your own ${PAINT_W}x${PAINT_H} pixel canvas, starting white. (0,0) is the top-left corner. \
 Aim for realistic painting, the way a skilled painter works: get proportion and perspective right, \
 decide where the light comes from, and build form with light, shadow and soft value transitions rather than \
 flat colors and outlines. Work in layers: block in large shapes and base colors, then shade and blend with the \
@@ -43,7 +43,7 @@ from COLOR1 at (x1,y1) to COLOR2 at (x2,y2), for skies, rounded forms and light 
 - eraser SIZE x1 y1 x2 y2 ... — erase back to white along a stroke
 - clear — wipe the whole canvas
 There is no text tool and no shape tools. Up to ${MAX_COMMANDS_PER_MESSAGE} lines per turn. \
-Each turn you're shown an image of the canvas as it is right now.`;
+Each turn you're shown your canvas and your opponent's as they are right now.`;
 
 type RGB = [number, number, number];
 
