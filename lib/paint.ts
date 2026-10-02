@@ -134,7 +134,9 @@ export function parseOp(line: string): Op | null {
   }
 }
 
-const PAINT_BLOCK = /```paint[^\n]*\n([\s\S]*?)(```|$)/g;
+// ```draw is accepted too, since bots sometimes slip into the older format's label;
+// only lines that are valid paint tools are used
+const PAINT_BLOCK = /```(?:paint|draw)[^\n]*\n([\s\S]*?)(```|$)/g;
 
 // Splits a bot message into its spoken text and its valid paint commands
 export function parsePaint(content: string): { text: string; commands: string[] } {

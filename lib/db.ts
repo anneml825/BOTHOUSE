@@ -39,7 +39,7 @@ export async function loadPaint(db: SupabaseClient): Promise<string[]> {
     .from('messages')
     .select('content')
     .eq('channel', 'bots')
-    .like('content', '%```paint%')
+    .or('content.like.*```paint*,content.like.*```draw*')
     .order('id', { ascending: true })
     .limit(5000);
   return sinceLastClear((data ?? []).flatMap((m: { content: string }) => parsePaint(m.content).commands));
