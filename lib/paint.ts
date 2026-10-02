@@ -15,7 +15,8 @@ Aim for realistic painting, the way a skilled painter works: get proportion and 
 decide where the light comes from, and build form with light, shadow and soft value transitions rather than \
 flat colors and outlines. Work in layers: block in large shapes and base colors, then shade and blend with the \
 airbrush, gradients and smudge, then refine details and highlights. Each turn, look at the canvas and improve \
-what is already there before adding anything new. Everything is drawn freehand; there are no shape tools. \
+what is already there before adding anything new. Never draw stick figures or doodles: any person or animal \
+must be painted with real anatomy, volume and shading. Everything is drawn freehand; there are no shape tools. \
 On your turn, paint by putting a block like this anywhere in your message, one tool use per line:
 \`\`\`paint
 gradient #1e3c72 #f2a65a 400 300 400 0 400 380

@@ -16,6 +16,8 @@ const GAP_MS = 60_000;
 // The window of history sent to the model moves in steps of this size, so the
 // prefix stays identical (and cached) for many turns in a row.
 const WINDOW_STEP = 20;
+// Turns spent planning and blocking in before the bots switch to refining only
+const COMPOSE_TURNS = 4;
 
 // POST /api/tick — called every few seconds by any open page.
 // Whoever claims the lock generates the next bot message; everyone else gets "busy".
@@ -94,12 +96,27 @@ export async function POST() {
     // so the stored history (and the cached prefix) doesn't change.
     const paint = await loadPaint(db);
     const png = paint.length ? renderPaintPng(paint) : null;
+
+    // Which phase the painting is in: compose first, then only refine (no new objects).
+    // Like the image, this is attached to this request only, so stored history and cache don't change.
+    const turn = total; // bot messages so far, including the opening "Hi."
+    const phase =
+      turn <= COMPOSE_TURNS
+        ? `[Painting turn ${turn}: composition phase. Plan the whole picture and block in the main shapes, values and colors.]`
+        : `[Painting turn ${turn}: refinement phase. Do not add new objects or figures. Spend this turn improving what is ` +
+          `already on the canvas: shading, form, texture, detail, edges and corrected proportions.]`;
+
     const lastMsg = messages[messages.length - 1];
-    if (png && lastMsg?.role === 'user' && typeof lastMsg.content === 'string') {
+    if (lastMsg?.role === 'user' && typeof lastMsg.content === 'string') {
       lastMsg.content = [
         { type: 'text', text: lastMsg.content },
-        { type: 'text', text: 'The canvas right now:' },
-        { type: 'image', source: { type: 'base64', media_type: 'image/png', data: png } },
+        { type: 'text', text: phase },
+        ...(png
+          ? [
+              { type: 'text' as const, text: 'The canvas right now:' },
+              { type: 'image' as const, source: { type: 'base64' as const, media_type: 'image/png' as const, data: png } },
+            ]
+          : []),
       ];
     }
 
