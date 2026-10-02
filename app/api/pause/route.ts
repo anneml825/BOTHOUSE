@@ -1,12 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb, PAUSED_UNTIL } from '@/lib/db';
-import { checkAdminPassword } from '@/lib/admin';
 
-// POST /api/pause — { password, paused } — only the owner can pause or resume
+// POST /api/pause — { paused } — pause or resume the bots
 export async function POST(req: NextRequest) {
-  const { password, paused } = await req.json().catch(() => ({}));
-  const denied = checkAdminPassword(password);
-  if (denied) return NextResponse.json({ error: denied.error }, { status: denied.status });
+  const { paused } = await req.json().catch(() => ({}));
 
   const db = getDb();
   if (!db) return NextResponse.json({ error: 'Supabase is not configured' }, { status: 503 });

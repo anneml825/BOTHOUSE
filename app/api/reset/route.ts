@@ -1,14 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getDb, savePicture } from '@/lib/db';
-import { checkAdminPassword } from '@/lib/admin';
 
-// POST /api/reset — { password } — owner only: clears the bot conversation so it restarts from "Hi."
+// POST /api/reset — clears the bot conversation so it restarts from "Hi."
 // The current drawing is saved to the gallery first. Viewer chat is kept.
-export async function POST(req: NextRequest) {
-  const { password } = await req.json().catch(() => ({}));
-  const denied = checkAdminPassword(password);
-  if (denied) return NextResponse.json({ error: denied.error }, { status: denied.status });
-
+export async function POST() {
+  
   const db = getDb();
   if (!db) return NextResponse.json({ error: 'Supabase is not configured' }, { status: 503 });
 

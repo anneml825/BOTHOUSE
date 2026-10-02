@@ -33,29 +33,6 @@ function loadUsername(): string {
   return `viewer${Math.floor(1000 + Math.random() * 9000)}`;
 }
 
-// The owner opens the site once with ?admin=PASSWORD; it's remembered in this browser
-function loadAdminPassword(): string | null {
-  try {
-    const url = new URL(window.location.href);
-    const fromUrl = url.searchParams.get('admin');
-    if (fromUrl) {
-      localStorage.setItem('adminPassword', fromUrl);
-      url.searchParams.delete('admin');
-      window.history.replaceState(null, '', url.toString());
-      return fromUrl;
-    }
-    return localStorage.getItem('adminPassword');
-  } catch {
-    return null;
-  }
-}
-
-function forgetAdminPassword() {
-  try {
-    localStorage.removeItem('adminPassword');
-  } catch {}
-}
-
 function saveUsername(name: string) {
   try {
     localStorage.setItem('username', name);
@@ -90,7 +67,6 @@ export default function Home() {
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
   const [paused, setPaused] = useState(false);
-  const [adminPassword, setAdminPassword] = useState<string | null>(null);
   const [pauseError, setPauseError] = useState<string | null>(null);
   const [tickError, setTickError] = useState<string | null>(null);
   const [stateError, setStateError] = useState<string | null>(null);
@@ -107,7 +83,6 @@ export default function Home() {
 
   useEffect(() => {
     setUsername(loadUsername());
-    setAdminPassword(loadAdminPassword());
   }, []);
 
   // Poll for new messages
@@ -185,29 +160,16 @@ export default function Home() {
     else status = `${botName(nextSpeaker)} is about to reply…`;
   }
 
-  // Owner-only actions. The first use in this browser asks for the password, then remembers it.
+  // Pause, save and start over
   const ownerAction = async (path: string, body: object): Promise<Record<string, unknown> | null> => {
     setPauseError(null);
-    let password = adminPassword;
-    if (!password) {
-      password = window.prompt('Owner password (ADMIN_PASSWORD in Vercel):')?.trim() || null;
-      if (!password) return null;
-      try {
-        localStorage.setItem('adminPassword', password);
-      } catch {}
-      setAdminPassword(password);
-    }
     try {
       const res = await fetch(path, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password, ...body }),
+        body: JSON.stringify(body),
       });
       const data = await res.json();
-      if (res.status === 401) {
-        forgetAdminPassword();
-        setAdminPassword(null);
-      }
       if (!res.ok) throw new Error(data.error ?? 'Something went wrong');
       return data;
     } catch (err) {

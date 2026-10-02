@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb, isMissingTable, savePicture } from '@/lib/db';
-import { checkAdminPassword } from '@/lib/admin';
 
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
@@ -22,11 +21,9 @@ export async function GET() {
   return NextResponse.json({ drawings: data ?? [] });
 }
 
-// POST /api/gallery — { password, title } — owner only: saves the current canvas
+// POST /api/gallery — { title } — saves the current canvas
 export async function POST(req: NextRequest) {
-  const { password, title } = await req.json().catch(() => ({}));
-  const denied = checkAdminPassword(password);
-  if (denied) return NextResponse.json({ error: denied.error }, { status: denied.status });
+  const { title } = await req.json().catch(() => ({}));
 
   const db = getDb();
   if (!db) return NextResponse.json({ error: 'Supabase is not configured' }, { status: 503 });
