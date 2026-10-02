@@ -9,38 +9,36 @@ const MAX_POINTS = 600;
 
 // Explained to the bots in their instructions
 export const PAINT_HELP = `You share an ${PAINT_W}x${PAINT_H} pixel canvas that works like MS Paint, starting white. \
-(0,0) is the top-left corner. Paint the way a person does in Paint: drag the brush in strokes, \
-use the spray can for shading and texture, the bucket to fill closed shapes, the pencil for fine detail. \
+(0,0) is the top-left corner. Everything is drawn freehand, the way a person drags a mouse in Paint: \
+there are no shape tools. Outline things with brush or pencil strokes that use many points \
+(10 or more per stroke, following the contour), close the outline, then fill it with the bucket. \
+Layer strokes for detail, use the spray can for shading and texture. \
 On your turn, paint by putting a block like this anywhere in your message, one tool use per line:
 \`\`\`paint
-brush #2b2b2b 4 120 400 140 360 175 335 220 330 260 345
-curve navy 3 300 300 340 220 440 220 480 300
-ellipse brown 3 600 200 70 50
-fill orange 600 200
-spray #4a7c3a 18 50 520 150 500 260 515 380 505
-pencil black 300 450 320 440 345 452
-line red 6 20 30 220 90
-rect blue 2 650 400 100 80 filled
-eraser 12 650 420 750 460
+brush #2b2b2b 4 300 260 318 232 345 214 380 206 418 210 450 226 470 252 474 284 462 314 436 336 400 346 362 342 330 326 308 300 300 270 300 260
+fill #e8a33d 390 280
+brush #6b3f1f 3 330 300 350 312 372 318 394 318 416 312 436 300
+pencil black 360 250 364 246 369 248 372 253
+spray #4a7c3a 18 50 520 110 508 170 515 230 505 290 512 350 500
+curve navy 3 500 300 540 220 640 220 680 300
+eraser 12 650 420 690 430 730 425 760 440
 \`\`\`
 Tools (COLOR is a hex like #ff8800 or a name like red, navy, skyblue; SIZE is the thickness in pixels):
 - brush COLOR SIZE x1 y1 x2 y2 x3 y3 ... — a freehand brush stroke through the points, like dragging the mouse
-- pencil COLOR x1 y1 x2 y2 ... — a 1-pixel freehand line
+- pencil COLOR x1 y1 x2 y2 ... — a 1-pixel freehand line, for fine detail and hatching
 - spray COLOR SIZE x1 y1 x2 y2 ... — spray can along the path; SIZE is the spray radius
-- fill COLOR x y — paint bucket: fills the area of one color around (x, y); shapes must be closed or it leaks
-- line COLOR SIZE x1 y1 x2 y2 — straight line
-- curve COLOR SIZE x1 y1 cx1 cy1 cx2 cy2 x2 y2 — curve from (x1,y1) to (x2,y2), bent toward the two control points
-- rect COLOR SIZE x y w h [filled] / ellipse COLOR SIZE cx cy rx ry [filled]
+- fill COLOR x y — paint bucket: fills the area of one color around (x, y); outlines must be closed or it leaks
+- curve COLOR SIZE x1 y1 cx1 cy1 cx2 cy2 x2 y2 — one smooth bend from (x1,y1) to (x2,y2), pulled toward the two control points
 - eraser SIZE x1 y1 x2 y2 ... — erase along a stroke
 - clear — wipe the whole canvas
-There is no text tool. Up to ${MAX_COMMANDS_PER_MESSAGE} lines per turn. \
+There is no text tool and no rectangle, ellipse or straight-line tool. Up to ${MAX_COMMANDS_PER_MESSAGE} lines per turn. \
 Each turn you're shown an image of the canvas as it is right now.`;
 
 type RGB = [number, number, number];
 
 type Op =
-  | { t: 'pencil'; c: RGB; pts: number[] }
-  | { t: 'brush'; c: RGB; size: number; pts: number[] }
+  | { t: 'pencil'; c: RGB; pts: number[]; seed: number }
+  | { t: 'brush'; c: RGB; size: number; pts: number[]; seed?: number }
   | { t: 'spray'; c: RGB; size: number; pts: number[]; seed: number }
   | { t: 'fill'; c: RGB; x: number; y: number }
   | { t: 'line'; c: RGB; size: number; pts: number[] }
@@ -105,7 +103,7 @@ export function parseOp(line: string): Op | null {
   switch (tool) {
     case 'pencil': {
       const pts = even(n);
-      return pts.length >= 2 ? { t: 'pencil', c, pts } : null;
+      return pts.length >= 2 ? { t: 'pencil', c, pts, seed: hash(line) } : null;
     }
     case 'brush':
     case 'spray': {
@@ -113,7 +111,7 @@ export function parseOp(line: string): Op | null {
       const size = clampSize(n.shift()!);
       const pts = even(n);
       if (pts.length < 2) return null;
-      return tool === 'brush' ? { t: 'brush', c, size, pts } : { t: 'spray', c, size, pts, seed: hash(line) };
+      return tool === 'brush' ? { t: 'brush', c, size, pts, seed: hash(line) } : { t: 'spray', c, size, pts, seed: hash(line) };
     }
     case 'fill':
       return n.length >= 2 ? { t: 'fill', c, x: Math.round(n[0]), y: Math.round(n[1]) } : null;
@@ -136,6 +134,8 @@ export function parseOp(line: string): Op | null {
 
 // ```draw is accepted too, since bots sometimes slip into the older format's label;
 // only lines that are valid paint tools are used
+const RETIRED_TOOLS = /^\s*(rect|ellipse|line)\b/i;
+
 const PAINT_BLOCK = /```(?:paint|draw)[^\n]*\n([\s\S]*?)(```|$)/g;
 
 // Splits a bot message into its spoken text and its valid paint commands
@@ -144,6 +144,9 @@ export function parsePaint(content: string): { text: string; commands: string[] 
   for (const match of content.matchAll(PAINT_BLOCK)) {
     const lines = match[1].split('\n').map((l) => l.trim()).filter(Boolean);
     for (const line of lines.slice(0, MAX_COMMANDS_PER_MESSAGE)) {
+      // Shape tools are retired for new paintings (they made everything look like clip-art);
+      // renderPaint still draws them so older gallery paintings keep working
+      if (RETIRED_TOOLS.test(line)) continue;
       if (parseOp(line)) commands.push(line);
     }
   }
@@ -221,19 +224,23 @@ class Pixels {
     const start = (y * PAINT_W + x) * 4;
     const tr = d[start], tg = d[start + 1], tb = d[start + 2];
     if (tr === c[0] && tg === c[1] && tb === c[2]) return;
+    // Each pixel is recolored as it's pushed, so it's pushed at most once and the stack can't overflow
     const stack = new Int32Array(PAINT_W * PAINT_H);
     let top = 0;
-    stack[top++] = y * PAINT_W + x;
+    const push = (p: number) => {
+      const i = p * 4;
+      if (d[i] !== tr || d[i + 1] !== tg || d[i + 2] !== tb) return;
+      d[i] = c[0]; d[i + 1] = c[1]; d[i + 2] = c[2];
+      stack[top++] = p;
+    };
+    push(y * PAINT_W + x);
     while (top > 0) {
       const p = stack[--top];
-      const i = p * 4;
-      if (d[i] !== tr || d[i + 1] !== tg || d[i + 2] !== tb) continue;
-      d[i] = c[0]; d[i + 1] = c[1]; d[i + 2] = c[2];
       const px = p % PAINT_W;
-      if (px > 0) stack[top++] = p - 1;
-      if (px < PAINT_W - 1) stack[top++] = p + 1;
-      if (p >= PAINT_W) stack[top++] = p - PAINT_W;
-      if (p < PAINT_W * (PAINT_H - 1)) stack[top++] = p + PAINT_W;
+      if (px > 0) push(p - 1);
+      if (px < PAINT_W - 1) push(p + 1);
+      if (p >= PAINT_W) push(p - PAINT_W);
+      if (p < PAINT_W * (PAINT_H - 1)) push(p + PAINT_W);
     }
   }
 }
@@ -255,6 +262,38 @@ function smoothPoints(pts: number[]): number[] {
     }
   }
   out.push(p[p.length - 1][0], p[p.length - 1][1]);
+  return out;
+}
+
+// A slight, smooth hand tremor so freehand strokes never look computer-perfect.
+// Deterministic (seeded by the command text), so server and browser draw identical pixels.
+function wobble(pts: number[], seed: number, amount: number): number[] {
+  if (pts.length < 4 || amount <= 0) return pts;
+  const rand = rng(seed);
+  const waves = [0, 1, 2].map(() => ({ f: 0.02 + rand() * 0.05, px: rand() * 6.28, py: rand() * 6.28 }));
+  const out: number[] = [];
+  let dist = 0;
+  for (let i = 0; i + 1 < pts.length; i += 2) {
+    if (i >= 2) dist += Math.hypot(pts[i] - pts[i - 2], pts[i + 1] - pts[i - 1]);
+    let dx = 0, dy = 0;
+    for (const w of waves) {
+      dx += Math.sin(dist * w.f + w.px);
+      dy += Math.sin(dist * w.f + w.py);
+    }
+    out.push(pts[i] + (dx / 3) * amount, pts[i + 1] + (dy / 3) * amount);
+  }
+  // Closed outline (ends where it started): bend the tremor so both ends meet again,
+  // otherwise the gap would make the paint bucket leak
+  const n = out.length;
+  if (Math.hypot(pts[0] - pts[pts.length - 2], pts[1] - pts[pts.length - 1]) < 2 && dist > 0) {
+    const gx = out[n - 2] - out[0], gy = out[n - 1] - out[1];
+    let run = 0;
+    for (let i = 2; i < n; i += 2) {
+      run += Math.hypot(pts[i] - pts[i - 2], pts[i + 1] - pts[i - 1]);
+      out[i] -= (gx * run) / dist;
+      out[i + 1] -= (gy * run) / dist;
+    }
+  }
   return out;
 }
 
@@ -281,12 +320,16 @@ function apply(px: Pixels, op: Op) {
     case 'clear':
       px.data.fill(255);
       return;
-    case 'pencil':
+    case 'pencil': {
       if (op.pts.length === 2) return px.set(op.pts[0], op.pts[1], op.c);
-      for (let i = 0; i + 3 < op.pts.length; i += 2) px.pencil(op.pts[i], op.pts[i + 1], op.pts[i + 2], op.pts[i + 3], op.c);
+      const s = wobble(smoothPoints(op.pts), op.seed, 0.8);
+      for (let i = 0; i + 3 < s.length; i += 2) px.pencil(s[i], s[i + 1], s[i + 2], s[i + 3], op.c);
       return;
+    }
     case 'brush': {
-      const s = smoothPoints(op.pts);
+      // Eraser strokes (no seed) stay steady; painted strokes get the hand tremor
+      const smooth = smoothPoints(op.pts);
+      const s = op.seed === undefined ? smooth : wobble(smooth, op.seed, Math.min(2.5, 0.8 + op.size * 0.15));
       if (s.length === 2) return px.disc(s[0], s[1], op.size / 2, op.c);
       for (let i = 0; i + 3 < s.length; i += 2) px.stroke(s[i], s[i + 1], s[i + 2], s[i + 3], op.size, op.c);
       return;
